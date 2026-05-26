@@ -276,6 +276,42 @@
             padding: 20px 0;
             box-shadow: 2px 0 10px rgba(0,0,0,0.3);
             border-top: 3px solid white;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .menu-toggle:hover {
+            background: #764ba2;
+        }
+
+        .sidebar.mobile-open {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+
+        .overlay.active {
+            display: block;
         }
 
         .menu-item {
@@ -671,8 +707,20 @@
         }
 
         @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
             .sidebar {
-                display: none;
+                position: fixed;
+                left: 0;
+                top: 66px;
+                z-index: 999;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
             }
             
             .cards-grid {
@@ -686,6 +734,22 @@
             .modal-content {
                 width: 95%;
                 margin: 20px auto;
+            }
+
+            .content-area {
+                padding: 15px;
+            }
+
+            .topbar {
+                padding: 10px 15px;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .logo img {
+                height: 30px;
             }
         }
     </style>
@@ -779,6 +843,7 @@
         <!-- Topbar -->
         <div class="topbar">
             <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleMenu()">☰</button>
                 <div class="logo">
                     <img src="https://i.imgur.com/fersync-logo.png" alt="FerSync Digital" onerror="this.style.display='none'">
                     ⚡ Painel de Acesso
@@ -796,22 +861,25 @@
             </div>
         </div>
 
+        <!-- Overlay para fechar menu no mobile -->
+        <div class="overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+
         <div class="main-container">
             <!-- Sidebar -->
-            <div class="sidebar">
-                <div class="menu-item active" onclick="showPage('home')">
+            <div class="sidebar" id="sidebar">
+                <div class="menu-item active" onclick="showPage('home'); closeMenuMobile();">
                     <span>🏠</span>
                     <span>Início</span>
                 </div>
-                <div class="menu-item" onclick="showPage('paineis')">
+                <div class="menu-item" onclick="showPage('paineis'); closeMenuMobile();">
                     <span>📊</span>
                     <span>Meus Painéis</span>
                 </div>
-                <div class="menu-item" id="menuUsuarios" onclick="showPage('usuarios')" style="display:none;">
+                <div class="menu-item" id="menuUsuarios" onclick="showPage('usuarios'); closeMenuMobile();" style="display:none;">
                     <span>👥</span>
                     <span>Usuários</span>
                 </div>
-                <div class="menu-item" id="menuConfig" onclick="showPage('config')" style="display:none;">
+                <div class="menu-item" id="menuConfig" onclick="showPage('config'); closeMenuMobile();" style="display:none;">
                     <span>⚙️</span>
                     <span>Configurações</span>
                 </div>
@@ -866,6 +934,12 @@
                             <h3>👥 Status dos Usuários</h3>
                             <div class="chart-container">
                                 <canvas id="chartStatus"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card" id="chartAcessosPeriodo" style="display:none;">
+                            <h3>🕐 Acessos por Período do Dia</h3>
+                            <div class="chart-container">
+                                <canvas id="chartPeriodo"></canvas>
                             </div>
                         </div>
                     </div>
@@ -993,6 +1067,7 @@
         let usuarioSelecionadoModal = null;
         let chartAcessos = null;
         let chartStatus = null;
+        let chartPeriodo = null;
 
         window.logout = logout;
         window.showPage = showPage;
@@ -1005,6 +1080,22 @@
         window.abrirModalPermissoes = abrirModalPermissoes;
         window.fecharModal = fecharModal;
         window.salvarPermissoes = salvarPermissoes;
+        window.toggleMenu = toggleMenu;
+        window.closeMenuMobile = closeMenuMobile;
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('menuOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeMenuMobile() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('menuOverlay');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
 
         async function verificarPrimeiroUsuario() {
             try {
@@ -1147,6 +1238,7 @@
         async function carregarGraficos() {
             document.getElementById('chartPaineisAcessos').style.display = 'block';
             document.getElementById('chartUsuariosStatus').style.display = 'block';
+            document.getElementById('chartAcessosPeriodo').style.display = 'block';
 
             // Gráfico de Acessos por Painel
             const paineisSnap = await getDocs(collection(db, 'paineis'));
@@ -1242,6 +1334,90 @@
                             callbacks: {
                                 label: function(context) {
                                     return context.label + ': ' + context.parsed + ' usuários';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de Acessos por Período
+            const acessosSnap = await getDocs(collection(db, 'acessos'));
+            let manha = 0;
+            let tarde = 0;
+            let noite = 0;
+
+            acessosSnap.forEach(doc => {
+                const acesso = doc.data();
+                const hora = acesso.hora || 12;
+                
+                if (hora >= 6 && hora < 12) {
+                    manha++;
+                } else if (hora >= 12 && hora < 18) {
+                    tarde++;
+                } else {
+                    noite++;
+                }
+            });
+
+            if (chartPeriodo) chartPeriodo.destroy();
+
+            const ctxPeriodo = document.getElementById('chartPeriodo').getContext('2d');
+            chartPeriodo = new Chart(ctxPeriodo, {
+                type: 'bar',
+                data: {
+                    labels: ['🌅 Manhã\n(6h - 12h)', '☀️ Tarde\n(12h - 18h)', '🌙 Noite\n(18h - 6h)'],
+                    datasets: [{
+                        label: 'Acessos',
+                        data: [manha, tarde, noite],
+                        backgroundColor: [
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(255, 152, 0, 0.8)',
+                            'rgba(63, 81, 181, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(255, 152, 0, 1)',
+                            'rgba(63, 81, 181, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Acessos: ' + context.parsed.y;
                                 }
                             }
                         }
@@ -1512,6 +1688,18 @@
                         const acessosAtuais = painel.acessos || 0;
                         await updateDoc(doc(db, 'paineis', painelId), {
                             acessos: acessosAtuais + 1
+                        });
+                        
+                        // Registrar acesso com horário
+                        const agora = new Date();
+                        await addDoc(collection(db, 'acessos'), {
+                            painelId: painelId,
+                            painelNome: painelNome,
+                            usuarioId: usuarioLogado.id,
+                            usuarioNome: usuarioLogado.nome,
+                            hora: agora.getHours(),
+                            data: agora,
+                            timestamp: agora.getTime()
                         });
                         
                         document.getElementById('painelTitulo').textContent = `📊 ${painelNome}`;
