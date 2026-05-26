@@ -388,6 +388,13 @@
             margin-bottom: 25px;
         }
 
+        .cards-grid-user {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
         .stat-card {
             background: white;
             padding: 15px;
@@ -420,6 +427,40 @@
         .stat-card.orange {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
+        }
+
+        .stat-card.info {
+            background: #005d61;
+            padding: 20px;
+            text-align: left;
+        }
+
+        .stat-card.info h3 {
+            color: #ffffff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-card.info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .stat-card.info li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #ffffff;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-card.info li:last-child {
+            border-bottom: none;
         }
 
         .stat-icon {
@@ -734,6 +775,10 @@
                 grid-template-columns: 1fr 1fr;
             }
 
+            .cards-grid-user {
+                grid-template-columns: 1fr;
+            }
+
             .header-section {
                 grid-template-columns: 1fr;
             }
@@ -906,7 +951,8 @@
                         </div>
                     </div>
 
-                    <div class="cards-grid">
+                    <!-- Cards para Administrador -->
+                    <div class="cards-grid" id="adminCards" style="display:none;">
                         <div class="stat-card purple">
                             <div class="stat-icon">📊</div>
                             <div class="stat-title">Painéis Disponíveis</div>
@@ -917,19 +963,38 @@
                             <div class="stat-title">Seu Nível</div>
                             <div class="stat-value" id="statNivel" style="font-size: 16px;">--</div>
                         </div>
-                        <div class="stat-card green" id="cardTotalUsers" style="display:none;">
+                        <div class="stat-card green" id="cardTotalUsers">
                             <div class="stat-icon">👥</div>
                             <div class="stat-title">Total de Usuários</div>
                             <div class="stat-value" id="statUsers">0</div>
                         </div>
-                        <div class="stat-card orange" id="cardPendentes" style="display:none;">
+                        <div class="stat-card orange" id="cardPendentes">
                             <div class="stat-icon">⏳</div>
                             <div class="stat-title">Aguardando Aprovação</div>
                             <div class="stat-value" id="statPendentes">0</div>
                         </div>
                     </div>
 
-                    <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 20px;">
+                    <!-- Cards para Usuários -->
+                    <div class="cards-grid-user" id="userCards" style="display:none;">
+                        <div class="stat-card purple">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-title">Painéis Disponíveis</div>
+                            <div class="stat-value" id="statPaineisUser">0</div>
+                        </div>
+                        <div class="stat-card blue">
+                            <div class="stat-icon">👤</div>
+                            <div class="stat-title">Seu Nível</div>
+                            <div class="stat-value" id="statNivelUser" style="font-size: 16px;">--</div>
+                        </div>
+                        <div class="stat-card info">
+                            <h3>📋 Seus Painéis</h3>
+                            <ul id="listaPaineisDisponiveis"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos para Administrador -->
+                    <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 20px;" id="adminCharts">
                         <div class="chart-card" id="chartPaineisAcessos" style="display:none;">
                             <h3>📊 Acessos por Painel</h3>
                             <div class="chart-container">
@@ -946,6 +1011,22 @@
                             <h3>🕐 Acessos por Período do Dia</h3>
                             <div class="chart-container">
                                 <canvas id="chartPeriodo"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos para Usuários -->
+                    <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 20px;" id="userCharts">
+                        <div class="chart-card" id="chartPaineisUsuario" style="display:none;">
+                            <h3>📊 Seus Painéis Mais Acessados</h3>
+                            <div class="chart-container">
+                                <canvas id="chartUsuarioPaineis"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card" id="chartPeriodoUsuario" style="display:none;">
+                            <h3>🕐 Seus Acessos por Período</h3>
+                            <div class="chart-container">
+                                <canvas id="chartUsuarioPeriodo"></canvas>
                             </div>
                         </div>
                     </div>
@@ -1071,6 +1152,8 @@
         let chartAcessos = null;
         let chartStatus = null;
         let chartPeriodo = null;
+        let chartUsuarioPaineis = null;
+        let chartUsuarioPeriodo = null;
 
         // Funções globais
         window.logout = logout;
@@ -1225,7 +1308,7 @@
             document.getElementById('dashboard').style.display = 'none';
         }
 
-        function mostrarDashboard() {
+        async function mostrarDashboard() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('pendingScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
@@ -1234,7 +1317,6 @@
             document.getElementById('userAvatar').textContent = initials;
             document.getElementById('userName').textContent = usuarioLogado.nome;
             document.getElementById('userRole').textContent = getNivelTexto(usuarioLogado.nivel);
-            document.getElementById('statNivel').textContent = getNivelTexto(usuarioLogado.nivel);
 
             const hora = new Date().getHours();
             let saudacao = 'Bom dia';
@@ -1243,15 +1325,185 @@
             document.getElementById('greeting').textContent = `${saudacao}, ${usuarioLogado.nome.split(' ')[0]}!`;
 
             if (usuarioLogado.nivel === 'admin') {
+                // Exibir interface de admin
+                document.getElementById('adminCards').style.display = 'grid';
+                document.getElementById('userCards').style.display = 'none';
+                document.getElementById('adminCharts').style.display = 'grid';
+                document.getElementById('userCharts').style.display = 'none';
+                
                 document.getElementById('menuUsuarios').style.display = 'flex';
                 document.getElementById('menuConfig').style.display = 'flex';
-                document.getElementById('cardTotalUsers').style.display = 'block';
-                document.getElementById('cardPendentes').style.display = 'block';
+                
+                document.getElementById('statNivel').textContent = getNivelTexto(usuarioLogado.nivel);
+                
                 atualizarStats();
                 carregarGraficos();
+            } else {
+                // Exibir interface de usuário
+                document.getElementById('adminCards').style.display = 'none';
+                document.getElementById('userCards').style.display = 'grid';
+                document.getElementById('adminCharts').style.display = 'none';
+                document.getElementById('userCharts').style.display = 'grid';
+                
+                document.getElementById('statNivelUser').textContent = getNivelTexto(usuarioLogado.nivel);
+                
+                await carregarGraficosUsuario();
             }
 
             carregarPaineis();
+        }
+
+        async function carregarGraficosUsuario() {
+            // Buscar painéis do usuário
+            const paineisSnap = await db.collection('paineis').get();
+            const niveis = { viewer: 1, user: 2, admin: 3 };
+            const painéisPermitidos = usuarioLogado.painéisPermitidos || [];
+            
+            let paineisUsuario = [];
+            paineisSnap.forEach(doc => {
+                const p = { id: doc.id, ...doc.data() };
+                const temNivel = niveis[p.nivelMinimo] <= niveis[usuarioLogado.nivel];
+                const temPermissao = painéisPermitidos.includes(p.id);
+                
+                if (temNivel && temPermissao) {
+                    paineisUsuario.push(p);
+                }
+            });
+
+            // Atualizar lista de painéis disponíveis
+            const listaPaineis = document.getElementById('listaPaineisDisponiveis');
+            listaPaineis.innerHTML = '';
+            
+            if (paineisUsuario.length === 0) {
+                listaPaineis.innerHTML = '<li style="color:#999;">Nenhum painel disponível</li>';
+            } else {
+                paineisUsuario.forEach(p => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `📊 ${p.nome}`;
+                    listaPaineis.appendChild(li);
+                });
+            }
+
+            document.getElementById('statPaineisUser').textContent = paineisUsuario.length;
+
+            // Buscar acessos do usuário
+            const acessosSnap = await db.collection('acessos')
+                .where('usuarioId', '==', usuarioLogado.id)
+                .get();
+
+            // Contar acessos por painel
+            const contagemPaineis = {};
+            acessosSnap.forEach(doc => {
+                const acesso = doc.data();
+                if (!contagemPaineis[acesso.painelId]) {
+                    contagemPaineis[acesso.painelId] = {
+                        nome: acesso.painelNome,
+                        count: 0
+                    };
+                }
+                contagemPaineis[acesso.painelId].count++;
+            });
+
+            // Gráfico de Painéis Mais Acessados
+            const labelsPaineis = [];
+            const dataPaineis = [];
+            const cores = ['#667eea', '#764ba2', '#00d2ff', '#3a7bd5', '#11998e', '#38ef7d', '#f093fb', '#f5576c'];
+
+            Object.values(contagemPaineis).forEach(item => {
+                labelsPaineis.push(item.nome);
+                dataPaineis.push(item.count);
+            });
+
+            if (labelsPaineis.length > 0) {
+                document.getElementById('chartPaineisUsuario').style.display = 'block';
+                
+                if (chartUsuarioPaineis) chartUsuarioPaineis.destroy();
+                
+                const ctxPaineis = document.getElementById('chartUsuarioPaineis').getContext('2d');
+                chartUsuarioPaineis = new Chart(ctxPaineis, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsPaineis,
+                        datasets: [{
+                            data: dataPaineis,
+                            backgroundColor: cores,
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: { size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.parsed + ' acessos';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('chartPaineisUsuario').style.display = 'none';
+            }
+
+            // Gráfico de Acessos por Período
+            let manha = 0, tarde = 0, noite = 0;
+
+            acessosSnap.forEach(doc => {
+                const hora = doc.data().hora || 12;
+                if (hora >= 6 && hora < 12) manha++;
+                else if (hora >= 12 && hora < 18) tarde++;
+                else noite++;
+            });
+
+            if (manha > 0 || tarde > 0 || noite > 0) {
+                document.getElementById('chartPeriodoUsuario').style.display = 'block';
+                
+                if (chartUsuarioPeriodo) chartUsuarioPeriodo.destroy();
+
+                const ctxPeriodo = document.getElementById('chartUsuarioPeriodo').getContext('2d');
+                chartUsuarioPeriodo = new Chart(ctxPeriodo, {
+                    type: 'bar',
+                    data: {
+                        labels: ['🌅 Manhã\n(6h-12h)', '☀️ Tarde\n(12h-18h)', '🌙 Noite\n(18h-6h)'],
+                        datasets: [{
+                            label: 'Acessos',
+                            data: [manha, tarde, noite],
+                            backgroundColor: ['rgba(255,193,7,0.8)', 'rgba(255,152,0,0.8)', 'rgba(63,81,181,0.8)'],
+                            borderColor: ['rgba(255,193,7,1)', 'rgba(255,152,0,1)', 'rgba(63,81,181,1)'],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, font: { size: 11 } }
+                            },
+                            x: {
+                                ticks: { font: { size: 10 } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('chartPeriodoUsuario').style.display = 'none';
+            }
         }
 
         async function carregarGraficos() {
@@ -1404,6 +1656,9 @@
             const pendentes = usuarios.docs.filter(d => d.data().status === 'pendente');
             document.getElementById('statUsers').textContent = usuarios.size;
             document.getElementById('statPendentes').textContent = pendentes.length;
+            
+            const paineis = await db.collection('paineis').get();
+            document.getElementById('statPaineis').textContent = paineis.size;
         }
 
         async function logout() {
@@ -1418,6 +1673,9 @@
             if (page === 'home') {
                 document.getElementById('pageHome').classList.add('active');
                 document.querySelectorAll('.menu-item')[0].classList.add('active');
+                if (usuarioLogado.nivel !== 'admin') {
+                    carregarGraficosUsuario();
+                }
             } else if (page === 'paineis') {
                 document.getElementById('pagePaineis').classList.add('active');
                 document.querySelectorAll('.menu-item')[1].classList.add('active');
@@ -1451,8 +1709,6 @@
                     permitidos.push(p);
                 }
             });
-
-            document.getElementById('statPaineis').textContent = permitidos.length;
 
             if (permitidos.length === 0) {
                 container.innerHTML = '<div class="content-card" style="grid-column: 1/-1;"><p style="color:#666;">Nenhum painel disponível para você no momento.</p></div>';
