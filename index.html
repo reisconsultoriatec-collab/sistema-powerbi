@@ -1744,17 +1744,19 @@
                 const tr = document.createElement('tr');
 
                 if (u.status === 'pendente') {
-                    tr.innerHTML = `
-                        <td>${u.nome}</td>
-                        <td>${u.email}</td>
-                        <td><span class="badge badge-pendente">Pendente</span></td>
-                        <td>
-                            <button onclick="aprovarUsuario('${u.id}')" class="btn btn-success btn-sm">Aprovar</button>
-                            <button onclick="bloquearUsuario('${u.id}')" class="btn btn-danger btn-sm">Rejeitar</button>
-                        </td>
-                    `;
-                    pendentes.appendChild(tr);
-                } else if (u.status === 'aprovado' && u.id !== usuarioLogado.id) {
+    tr.innerHTML = `
+        <td>${u.nome}</td>
+        <td>${u.email}</td>
+        <td><span class="badge badge-pendente">Pendente</span></td>
+        <td>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="aprovarUsuario('${u.id}')" class="btn btn-success btn-sm" style="flex: 1;">Aprovar</button>
+                <button onclick="bloquearUsuario('${u.id}')" class="btn btn-danger btn-sm" style="flex: 1;">Rejeitar</button>
+            </div>
+        </td>
+    `;
+    pendentes.appendChild(tr);
+} else if (u.status === 'aprovado' && u.id !== usuarioLogado.id) {
                     const painéisCount = (u.painéisPermitidos || []).length;
                     tr.innerHTML = `
                         <td>${u.nome}</td>
@@ -1943,7 +1945,7 @@
                 status: 'aprovado',
                 painéisPermitidos: []
             });
-            alert('✅ Usuário aprovado!');
+            alert('✅ Usuário Aprovado!');
             carregarUsuarios();
             atualizarStats();
         }
