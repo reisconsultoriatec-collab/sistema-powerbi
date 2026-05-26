@@ -8,10 +8,10 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
-    <!-- Firebase SDK Compat (funciona sem módulos ES6) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK v9 Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     
     <style>
         * {
@@ -191,7 +191,6 @@
             display: none;
             min-height: 100vh;
             background: #000000;
-            display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -803,7 +802,7 @@
                         <input type="email" id="registerEmail" required>
                     </div>
                     <div class="form-group">
-                        <label>Senha</label>
+                        <label>Senha (mínimo 6 caracteres)</label>
                         <input type="password" id="registerPassword" required minlength="6">
                     </div>
                     <button type="submit" class="btn btn-success" id="btnRegister">Criar Conta</button>
@@ -813,7 +812,7 @@
     </div>
 
     <!-- TELA DE PENDENTE -->
-    <div id="pendingScreen" class="pending-screen" style="display:none;">
+    <div id="pendingScreen" class="pending-screen">
         <div class="pending-card">
             <div class="pending-icon">⏳</div>
             <h2 style="margin-bottom: 15px; color: #333;">Aguardando Aprovação</h2>
@@ -853,7 +852,6 @@
             <div class="topbar-left">
                 <button class="menu-toggle" onclick="toggleMenu()">☰</button>
                 <div class="logo">
-                    <img src="https://i.imgur.com/fersync-logo.png" alt="FerSync Digital" onerror="this.style.display='none'">
                     ⚡ Painel de Acesso
                 </div>
             </div>
@@ -1053,17 +1051,17 @@
     </div>
 
     <script>
-        // Inicializar Firebase com versão Compat (sem módulos ES6)
+        // Configuração Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCoA1vvziQRIflAqfpatQD6lnYbTxiXW6o",
             authDomain: "sistema-powerbi.firebaseapp.com",
             projectId: "sistema-powerbi",
             storageBucket: "sistema-powerbi.firebasestorage.app",
             messagingSenderId: "404615520187",
-            appId: "1:404615520187:web:89f810e0fd15fcf853ee9e",
-            measurementId: "G-J3ZVVCYDP3"
+            appId: "1:404615520187:web:89f810e0fd15fcf853ee9e"
         };
 
+        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -1109,6 +1107,7 @@
                 const snap = await db.collection('usuarios').get();
                 return snap.empty;
             } catch (error) {
+                console.error('Erro ao verificar usuários:', error);
                 return false;
             }
         }
@@ -1128,7 +1127,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error('Erro:', error);
+                    console.error('Erro ao buscar dados do usuário:', error);
                 }
             }
         });
@@ -1145,6 +1144,7 @@
                     document.getElementById('loginPassword').value
                 );
             } catch (error) {
+                console.error('Erro no login:', error);
                 mostrarErro('loginAlert', 'E-mail ou senha incorretos');
                 btn.disabled = false;
                 btn.textContent = 'Entrar';
@@ -1182,7 +1182,18 @@
 
                 document.getElementById('registerForm').reset();
             } catch (error) {
-                mostrarErro('loginAlert', 'Erro ao criar conta');
+                console.error('Erro ao criar conta:', error);
+                let mensagem = 'Erro ao criar conta';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    mensagem = '❌ Este e-mail já está cadastrado';
+                } else if (error.code === 'auth/weak-password') {
+                    mensagem = '❌ A senha deve ter pelo menos 6 caracteres';
+                } else if (error.code === 'auth/invalid-email') {
+                    mensagem = '❌ E-mail inválido';
+                }
+                
+                mostrarErro('loginAlert', mensagem);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Criar Conta';
@@ -1203,6 +1214,7 @@
                 carregarPaineisAdmin();
                 alert('✅ Painel adicionado!');
             } catch (error) {
+                console.error('Erro ao adicionar painel:', error);
                 alert('Erro ao adicionar painel');
             }
         });
@@ -1281,9 +1293,7 @@
                             position: 'bottom',
                             labels: {
                                 padding: 15,
-                                font: {
-                                    size: 11
-                                }
+                                font: { size: 11 }
                             }
                         },
                         tooltip: {
@@ -1299,9 +1309,7 @@
 
             // Gráfico de Status dos Usuários
             const usuariosSnap = await db.collection('usuarios').get();
-            let ativos = 0;
-            let pendentes = 0;
-            let bloqueados = 0;
+            let ativos = 0, pendentes = 0, bloqueados = 0;
 
             usuariosSnap.forEach(doc => {
                 const status = doc.data().status;
@@ -1332,9 +1340,7 @@
                             position: 'bottom',
                             labels: {
                                 padding: 15,
-                                font: {
-                                    size: 11
-                                }
+                                font: { size: 11 }
                             }
                         },
                         tooltip: {
@@ -1350,21 +1356,13 @@
 
             // Gráfico de Acessos por Período
             const acessosSnap = await db.collection('acessos').get();
-            let manha = 0;
-            let tarde = 0;
-            let noite = 0;
+            let manha = 0, tarde = 0, noite = 0;
 
             acessosSnap.forEach(doc => {
-                const acesso = doc.data();
-                const hora = acesso.hora || 12;
-                
-                if (hora >= 6 && hora < 12) {
-                    manha++;
-                } else if (hora >= 12 && hora < 18) {
-                    tarde++;
-                } else {
-                    noite++;
-                }
+                const hora = doc.data().hora || 12;
+                if (hora >= 6 && hora < 12) manha++;
+                else if (hora >= 12 && hora < 18) tarde++;
+                else noite++;
             });
 
             if (chartPeriodo) chartPeriodo.destroy();
@@ -1373,20 +1371,12 @@
             chartPeriodo = new Chart(ctxPeriodo, {
                 type: 'bar',
                 data: {
-                    labels: ['🌅 Manhã\n(6h - 12h)', '☀️ Tarde\n(12h - 18h)', '🌙 Noite\n(18h - 6h)'],
+                    labels: ['🌅 Manhã\n(6h-12h)', '☀️ Tarde\n(12h-18h)', '🌙 Noite\n(18h-6h)'],
                     datasets: [{
                         label: 'Acessos',
                         data: [manha, tarde, noite],
-                        backgroundColor: [
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(255, 152, 0, 0.8)',
-                            'rgba(63, 81, 181, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 193, 7, 1)',
-                            'rgba(255, 152, 0, 1)',
-                            'rgba(63, 81, 181, 1)'
-                        ],
+                        backgroundColor: ['rgba(255,193,7,0.8)', 'rgba(255,152,0,0.8)', 'rgba(63,81,181,0.8)'],
+                        borderColor: ['rgba(255,193,7,1)', 'rgba(255,152,0,1)', 'rgba(63,81,181,1)'],
                         borderWidth: 2
                     }]
                 },
@@ -1396,38 +1386,14 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                font: {
-                                    size: 11
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
+                            ticks: { stepSize: 1, font: { size: 11 } }
                         },
                         x: {
-                            ticks: {
-                                font: {
-                                    size: 10
-                                }
-                            },
-                            grid: {
-                                display: false
-                            }
+                            ticks: { font: { size: 10 } }
                         }
                     },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Acessos: ' + context.parsed.y;
-                                }
-                            }
-                        }
+                        legend: { display: false }
                     }
                 }
             });
@@ -1474,12 +1440,10 @@
 
             const niveis = { viewer: 1, user: 2, admin: 3 };
             let permitidos = [];
-
             const painéisPermitidos = usuarioLogado.painéisPermitidos || [];
 
             snap.forEach(doc => {
                 const p = { id: doc.id, ...doc.data() };
-                
                 const temNivel = niveis[p.nivelMinimo] <= niveis[usuarioLogado.nivel];
                 const temPermissao = painéisPermitidos.includes(p.id);
                 
@@ -1547,7 +1511,7 @@
                             </select>
                         </td>
                         <td>
-                            <button onclick="abrirModalPermissoes('${u.id}')" class="btn btn-warning btn-sm" style="margin-right: 5px;">
+                            <button onclick="abrirModalPermissoes('${u.id}')" class="btn btn-warning btn-sm">
                                 🔐 Permissões (${painéisCount})
                             </button>
                             <button onclick="bloquearUsuario('${u.id}')" class="btn btn-danger btn-sm">Bloquear</button>
@@ -1564,7 +1528,6 @@
 
         async function abrirModalPermissoes(userId) {
             usuarioSelecionadoModal = userId;
-            
             const userDoc = await db.collection('usuarios').doc(userId).get();
             const userData = userDoc.data();
             
@@ -1591,9 +1554,7 @@
                             <small>Nível mínimo: ${getNivelTexto(painel.nivelMinimo)}</small>
                         </div>
                         <div class="checkbox-wrapper">
-                            <input type="checkbox" 
-                                   id="painel_${painel.id}" 
-                                   ${temPermissao ? 'checked' : ''}>
+                            <input type="checkbox" id="painel_${painel.id}" ${temPermissao ? 'checked' : ''}>
                             <label for="painel_${painel.id}">${temPermissao ? 'Permitido' : 'Bloqueado'}</label>
                         </div>
                     `;
@@ -1630,8 +1591,7 @@
             
             checkboxes.forEach(cb => {
                 if (cb.checked) {
-                    const painelId = cb.id.replace('painel_', '');
-                    painéisPermitidos.push(painelId);
+                    painéisPermitidos.push(cb.id.replace('painel_', ''));
                 }
             });
             
@@ -1639,21 +1599,18 @@
                 await db.collection('usuarios').doc(usuarioSelecionadoModal).update({
                     painéisPermitidos: painéisPermitidos
                 });
-                
-                alert('✅ Permissões atualizadas com sucesso!');
+                alert('✅ Permissões atualizadas!');
                 fecharModal();
                 carregarUsuarios();
             } catch (error) {
+                console.error('Erro:', error);
                 alert('❌ Erro ao salvar permissões');
-                console.error(error);
             }
         }
 
         window.onclick = function(event) {
             const modal = document.getElementById('permissoesModal');
-            if (event.target == modal) {
-                fecharModal();
-            }
+            if (event.target == modal) fecharModal();
         }
 
         async function carregarPaineisAdmin() {
@@ -1691,13 +1648,10 @@
                     if (docSnap.id === painelId) {
                         const painel = docSnap.data();
                         
-                        // Incrementar contador de acessos
-                        const acessosAtuais = painel.acessos || 0;
                         await db.collection('paineis').doc(painelId).update({
-                            acessos: acessosAtuais + 1
+                            acessos: (painel.acessos || 0) + 1
                         });
                         
-                        // Registrar acesso com horário
                         const agora = new Date();
                         await db.collection('acessos').add({
                             painelId: painelId,
@@ -1705,13 +1659,11 @@
                             usuarioId: usuarioLogado.id,
                             usuarioNome: usuarioLogado.nome,
                             hora: agora.getHours(),
-                            data: agora,
-                            timestamp: agora.getTime()
+                            data: agora
                         });
                         
                         document.getElementById('painelTitulo').textContent = `📊 ${painelNome}`;
                         document.getElementById('painelSubtitulo').textContent = 'Dashboard Power BI';
-                        
                         document.getElementById('painelIframe').src = painel.link;
                         
                         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1735,7 +1687,7 @@
                 status: 'aprovado',
                 painéisPermitidos: []
             });
-            alert('✅ Usuário aprovado! Agora você pode configurar as permissões de painéis.');
+            alert('✅ Usuário aprovado!');
             carregarUsuarios();
             atualizarStats();
         }
@@ -1756,16 +1708,15 @@
         }
 
         async function excluirPainel(id) {
-            if (confirm('Excluir painel? Isso também removerá as permissões de todos os usuários para este painel.')) {
+            if (confirm('Excluir painel?')) {
                 await db.collection('paineis').doc(id).delete();
                 
                 const usuarios = await db.collection('usuarios').get();
                 usuarios.forEach(async (userDoc) => {
                     const userData = userDoc.data();
                     if (userData.painéisPermitidos && userData.painéisPermitidos.includes(id)) {
-                        const novosPaineis = userData.painéisPermitidos.filter(p => p !== id);
                         await db.collection('usuarios').doc(userDoc.id).update({
-                            painéisPermitidos: novosPaineis
+                            painéisPermitidos: userData.painéisPermitidos.filter(p => p !== id)
                         });
                     }
                 });
@@ -1794,14 +1745,14 @@
             const el = document.getElementById(id);
             el.textContent = msg;
             el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 4000);
+            setTimeout(() => el.style.display = 'none', 5000);
         }
 
         function mostrarSucesso(id, msg) {
             const el = document.getElementById(id);
             el.textContent = msg;
             el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 4000);
+            setTimeout(() => el.style.display = 'none', 5000);
         }
     </script>
 </body>
