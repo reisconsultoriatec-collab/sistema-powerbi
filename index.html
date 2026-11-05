@@ -6,41 +6,365 @@
     <title>Sistema Power BI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'Segoe UI',sans-serif;background:#F1F5F9;min-height:100vh;}
-        .login-container{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0F172A;padding:20px;}
         .login-card{background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:440px;overflow:hidden;padding:40px 32px 28px;}
         .login-brand{text-align:center;margin-bottom:28px;}
         .login-brand-icon{width:72px;height:72px;background:linear-gradient(135deg,#F59E0B,#D97706);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(245,158,11,.35);}
         .login-brand-icon .ti{font-size:36px;color:white;}
         .login-brand h1{font-size:26px;font-weight:700;font-style:italic;color:#1A2744;margin-bottom:4px;}
         .login-brand p{font-size:14px;color:#94A3B8;}
-        .login-tabs{display:flex;margin-bottom:28px;border-bottom:2px solid #E2E8F0;position:relative;}
-        .login-tab{flex:1;padding:12px 0;text-align:center;font-size:15px;font-weight:600;color:#94A3B8;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .25s;}
-        .login-tab.active{color:#1A2744;border-bottom-color:#1A2744;}
-        .login-tab:hover:not(.active){color:#64748B;}
-        .login-tab-panel{display:none;}
-        .login-tab-panel.active{display:block;}
-        .login-body{padding:0;}
-        .login-field{margin-bottom:18px;}
-        .login-field label{display:block;margin-bottom:6px;color:#1A2744;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
-        .login-field .field-wrap{position:relative;}
-        .login-field input{width:100%;padding:13px 16px;background:#F1F5F9;border:2px solid #F1F5F9;border-radius:10px;font-size:14px;color:#334155;transition:all .3s;font-family:inherit;}
-        .login-field input::placeholder{color:#94A3B8;}
-        .login-field input:focus{outline:none;border-color:#F59E0B;background:white;}
-        .eye-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94A3B8;font-size:18px;padding:0;line-height:1;transition:color .2s;}
-        .eye-toggle:hover{color:#1A2744;}
         .btn-login{width:100%;padding:14px;background:#1A2744;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
         .btn-login:hover{background:#243352;transform:translateY(-1px);box-shadow:0 6px 20px rgba(26,39,68,.35);}
         .btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-        .btn-register{width:100%;padding:14px;background:#F59E0B;color:#1A2744;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
-        .btn-register:hover{background:#D97706;transform:translateY(-1px);box-shadow:0 6px 20px rgba(245,158,11,.35);}
-        .btn-register:disabled{opacity:.6;cursor:not-allowed;transform:none;}
         .login-footer{text-align:center;margin-top:24px;font-size:12px;color:#CBD5E1;}
+        /* ===== TELA DE LOGIN (padrão CondoGest / OdontoWorld) ============================
+           Visual escuro fixo. À esquerda, o painel do Sistema Power BI: a caneta escreve a
+           frase, sublinha "em um só lugar" e desenha os eixos de um gráfico no fim; as
+           barras sobem, a linha de tendência é traçada e o último ponto pulsa. Abaixo, a
+           prévia do portal (dados ilustrativos) e, ao fundo, um horizonte de colunas de
+           gráfico. O painel some no celular. À direita, o cartão de acesso, com os mesmos
+           IDs e funções de antes (loginForm, registerForm, switchLoginTab...). */
+        #loginScreen{
+            --ls-tinta:#7DD3FC;--ls-ceu:#38BDF8;--ls-luz:#FCD34D;
+            --ls-texto:#F1F6FF;--ls-texto-2:#A7B6D3;--ls-texto-3:#7486AA;
+            --ls-linha:rgba(148,190,255,.16);--ls-campo:#0A1530;
+            position:fixed;inset:0;z-index:100;display:flex;align-items:stretch;justify-content:flex-start;
+            isolation:isolate;overflow-y:auto;color:var(--ls-texto);
+            font-family:'Inter','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;
+        }
+        /* fundo azul-noite (também na tela de aprovação, para a passagem ser contínua) */
+        #loginScreen,.pending-screen{
+            background:radial-gradient(1000px 640px at 92% -12%,rgba(56,189,248,.17),transparent 62%),
+                       radial-gradient(820px 560px at -8% 110%,rgba(45,212,191,.07),transparent 62%),
+                       linear-gradient(135deg,#061126 0%,#0C1F45 50%,#133A6E 100%);
+        }
+        /* quadriculado bem sutil */
+        #loginScreen::before{
+            content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+            background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+            background-size:28px 28px;background-position:-1px -1px;
+            -webkit-mask-image:radial-gradient(ellipse 75% 85% at 28% 45%,#000 25%,transparent 80%);
+            mask-image:radial-gradient(ellipse 75% 85% at 28% 45%,#000 25%,transparent 80%);
+        }
+
+        /* marca (colunas e linha de tendência em degradê âmbar) */
+        #loginScreen .auth-marca{
+            display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;flex-shrink:0;
+            background:linear-gradient(180deg,#13244A,#0B1733);box-shadow:inset 0 0 0 1px rgba(148,190,255,.18),0 6px 16px -8px rgba(0,0,0,.6);
+        }
+        #loginScreen .auth-marca svg{width:62%;height:62%;}
+
+        /* ---------- Painel do Sistema Power BI ---------- */
+        #loginScreen .auth-lado{
+            flex:1.1 1 0;min-width:0;position:sticky;top:0;height:100vh;min-height:560px;
+            display:flex;flex-direction:column;justify-content:space-between;gap:32px;padding:44px clamp(32px,6vw,96px);
+        }
+        #loginScreen .auth-lado::before{
+            content:'';position:absolute;top:0;bottom:0;left:calc(clamp(32px,6vw,96px) - 24px);width:1px;
+            background:linear-gradient(transparent,rgba(56,189,248,.45) 18%,rgba(56,189,248,.45) 82%,transparent);
+        }
+        #loginScreen .auth-lado-marca{display:flex;align-items:center;gap:12px;font-family:'Space Grotesk','Segoe UI',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.01em;color:#fff;}
+        #loginScreen .auth-lado-texto{max-width:600px;position:relative;}
+        #loginScreen .auth-titulo{
+            font-family:'Space Grotesk','Segoe UI',sans-serif;font-size:clamp(32px,3.3vw,48px);line-height:1.18;letter-spacing:-.02em;
+            font-weight:700;margin:0 0 32px;text-wrap:balance;color:#fff;font-style:normal;
+        }
+        /* frase escrita pela caneta: contorno azul-céu no traço, depois preenche de branco */
+        #loginScreen .so-leitor{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+        #loginScreen .esc-p{white-space:nowrap;}
+        #loginScreen .esc-l{color:transparent;-webkit-text-stroke:1.1px transparent;}
+        #loginScreen .esc-l.traco{-webkit-text-stroke-color:var(--ls-tinta);}
+        /* preenchimento por animação: letras estreitas ("l", "i") às vezes são escritas num quadro só
+           e ganham as duas classes juntas; assim o contorno aparece sempre antes do branco */
+        #loginScreen .esc-l.traco.feito{color:#fff;-webkit-text-stroke-color:rgba(125,211,252,0);animation:escPreenche .8s ease-out;}
+        @keyframes escPreenche{
+            0%,15%{color:rgba(255,255,255,0);-webkit-text-stroke-color:var(--ls-tinta);}
+            37%{-webkit-text-stroke-color:var(--ls-tinta);}
+            90%{color:#fff;}
+            100%{color:#fff;-webkit-text-stroke-color:rgba(125,211,252,0);}
+        }
+        #loginScreen .auth-titulo.apagando .esc-l{color:transparent;-webkit-text-stroke-color:transparent;transition:color .45s ease,-webkit-text-stroke-color .45s ease;}
+        #loginScreen .esc-destaque{position:relative;}
+        #loginScreen .esc-risco{position:absolute;left:-3%;width:106%;bottom:-.12em;height:.34em;overflow:visible;pointer-events:none;}
+        #loginScreen .esc-risco path{fill:none;stroke:var(--ls-ceu);stroke-width:3.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0;}
+        /* o sublinhado e os eixos do gráfico só aparecem quando a caneta chega neles */
+        #loginScreen .esc-risco.riscando path,#loginScreen .auth-titulo.escrito .esc-risco path{opacity:1;}
+        #loginScreen .auth-titulo.escrito .esc-l{color:#fff;-webkit-text-stroke-color:transparent;clip-path:none;}
+        #loginScreen .auth-titulo.escrito .esc-risco path{stroke-dashoffset:0;}
+
+        /* o gráfico: a caneta traça os eixos, as barras sobem, a linha de tendência é traçada */
+        #loginScreen .graf{display:inline-block;width:1.74em;height:1.5em;margin:-.34em 0 -.16em .2em;vertical-align:-.28em;overflow:visible;}
+        #loginScreen .gf-contorno{fill:none;stroke:var(--ls-tinta);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:400;stroke-dashoffset:400;opacity:0;}
+        #loginScreen .graf.tracando .gf-contorno,#loginScreen .auth-titulo.escrito .gf-contorno{opacity:1;}
+        #loginScreen .gf-grade{opacity:0;}
+        #loginScreen .gf-grade path{fill:none;stroke:rgba(125,211,252,.22);stroke-width:.8;stroke-dasharray:2 3;}
+        #loginScreen .gf-barra{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);}
+        #loginScreen .gf-topo{fill:rgba(255,255,255,.6);}
+        #loginScreen .gf-destaque .gf-topo{fill:#FEF3C7;}
+        #loginScreen .gf-linha{fill:none;stroke:#F1F6FF;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;}
+        #loginScreen .gf-ponto{fill:#0B1D42;stroke:#F1F6FF;stroke-width:1.2;transform-box:fill-box;transform-origin:center;transform:scale(0);}
+        #loginScreen .gf-ponto.gf-fim{fill:var(--ls-luz);stroke:#FEF3C7;}
+        #loginScreen .gf-pulso{fill:var(--ls-luz);opacity:0;transform-box:fill-box;transform-origin:center;}
+        #loginScreen .gf-halo{opacity:0;}
+        #loginScreen .gf-brilho-mov{transform:translateX(-30px);opacity:0;}
+        #loginScreen .faisca{fill:#E0F2FE;transform-box:fill-box;transform-origin:center;transform:scale(0);opacity:0;}
+        /* montando (a classe entra quando a caneta termina os eixos) */
+        #loginScreen .graf.montando .gf-grade{opacity:1;transition:opacity .4s ease .05s;}
+        #loginScreen .graf.montando .gf-barra{transform:none;transition:transform .55s cubic-bezier(.34,1.45,.55,1) calc(.15s + var(--k) * .18s);}
+        #loginScreen .graf.montando .gf-linha{stroke-dashoffset:0;transition:stroke-dashoffset .9s cubic-bezier(.4,.1,.2,1) 1.2s;}
+        #loginScreen .graf.montando .gf-ponto{transform:none;transition:transform .35s cubic-bezier(.2,.8,.2,1) calc(1.25s + var(--k) * .17s);}
+        #loginScreen .graf.montando .gf-pulso{animation:gfPulso 2s ease-out 2.2s infinite;}
+        #loginScreen .graf.montando .gf-halo{opacity:1;transition:opacity 1s ease 1.9s;}
+        #loginScreen .graf.montando .gf-brilho-mov{animation:gfVarre 1s ease 2.3s both;}
+        #loginScreen .graf.montando .faisca{animation:gfFaisca 1s cubic-bezier(.2,.8,.2,1) 2.5s both;}
+        #loginScreen .graf.montando .f2{animation-delay:2.7s;}
+        /* desmontando (quando a frase se apaga para recomeçar) */
+        #loginScreen .graf.desmontando .gf-barra{transform:scaleY(0);transition:transform .38s ease-in calc((4 - var(--k)) * .05s);}
+        #loginScreen .graf.desmontando .gf-linha{stroke-dashoffset:1;transition:stroke-dashoffset .4s ease;}
+        #loginScreen .graf.desmontando .gf-ponto{transform:scale(0);transition:transform .2s ease;}
+        #loginScreen .graf.desmontando .gf-grade,#loginScreen .graf.desmontando .gf-halo{opacity:0;transition:opacity .3s ease;}
+        #loginScreen .graf.desmontando .gf-contorno{transition:stroke-dashoffset .6s ease;}
+        /* frase pronta e parada (celular, "reduzir movimento") */
+        #loginScreen .auth-titulo.escrito .gf-contorno{stroke-dashoffset:0;}
+        #loginScreen .auth-titulo.escrito .gf-grade,#loginScreen .auth-titulo.escrito .gf-halo{opacity:1;}
+        #loginScreen .auth-titulo.escrito .gf-barra,#loginScreen .auth-titulo.escrito .gf-ponto{transform:none;}
+        #loginScreen .auth-titulo.escrito .gf-linha{stroke-dashoffset:0;}
+        #loginScreen .auth-titulo.escrito .faisca{transform:scale(1);opacity:.9;}
+        @keyframes gfPulso{0%{opacity:.6;transform:scale(1);}100%{opacity:0;transform:scale(3.2);}}
+        @keyframes gfVarre{0%{transform:translateX(-30px);opacity:0;}15%{opacity:1;}100%{transform:translateX(100px);opacity:0;}}
+        @keyframes gfFaisca{0%{transform:scale(0) rotate(-45deg);opacity:0;}55%{transform:scale(1.25) rotate(0);opacity:1;}100%{transform:scale(1);opacity:.9;}}
+        /* a caneta */
+        #loginScreen .caneta{position:absolute;left:0;top:0;width:0;height:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .35s ease;}
+        #loginScreen .caneta.visivel{opacity:1;}
+        #loginScreen .caneta-mov{position:absolute;left:0;top:0;}
+        #loginScreen .caneta svg{position:absolute;left:0;top:-10px;width:124px;height:20px;transform-origin:0 10px;transform:rotate(-38deg);filter:drop-shadow(-3px 10px 8px rgba(2,6,23,.55));}
+
+        /* ---------- Prévia do portal (vitrine) ----------
+           Só decoração: valores fictícios fixos no código, nenhum dado do banco. */
+        #loginScreen .vitrine{max-width:600px;margin:0 0 26px;}
+        #loginScreen .vt-rotulo{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(225,235,255,.58);}
+        #loginScreen .vt-rotulo-nota{text-transform:none;letter-spacing:0;font-weight:500;color:rgba(225,235,255,.4);}
+        #loginScreen .vt-pulso{width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 0 0 rgba(52,211,153,.55);animation:vtPulso 2.2s ease-out infinite;}
+        #loginScreen .vt-grade{display:grid;grid-template-columns:1.08fr 1fr;grid-template-rows:auto auto;gap:12px;}
+        #loginScreen .vt-i1{grid-row:1 / span 2;}
+        #loginScreen .vt-item{min-width:0;}
+        #loginScreen .vt-card{
+            height:100%;border-radius:14px;padding:14px 16px;color:var(--ls-texto);
+            background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03));
+            box-shadow:inset 0 0 0 1px rgba(148,190,255,.14),0 18px 40px -22px rgba(2,6,23,.85);
+            -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+            animation:vtFlutua 7s ease-in-out infinite;
+        }
+        #loginScreen .vt-i2 .vt-card{animation-delay:-2.3s;}
+        #loginScreen .vt-i3 .vt-card{animation-delay:-4.6s;}
+        #loginScreen .vt-topo{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--ls-texto-2);white-space:nowrap;}
+        #loginScreen .vt-chip{margin-left:auto;padding:2px 8px;border-radius:20px;font-size:10.5px;background:rgba(56,189,248,.12);color:var(--ls-tinta);}
+        #loginScreen .vt-ic{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;}
+        #loginScreen .vt-ic.azul{background:rgba(56,189,248,.14);color:#7DD3FC;}
+        #loginScreen .vt-ic.verde{background:rgba(52,211,153,.15);color:#6EE7B7;}
+        #loginScreen .vt-ic.ambar{background:rgba(251,191,36,.15);color:#FCD34D;}
+        #loginScreen .vt-valor{
+            margin:12px 0 3px;font-family:'Space Grotesk','Segoe UI',sans-serif;font-size:clamp(22px,2vw,28px);font-weight:700;
+            letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;transition:color .4s ease;
+        }
+        #loginScreen .vt-valor.sobe{color:#6EE7B7;}
+        #loginScreen .vt-variacao{display:flex;align-items:center;gap:5px;font-size:12px;color:#6EE7B7;white-space:nowrap;}
+        #loginScreen .vt-variacao i{font-size:14px;}
+        #loginScreen .vt-grafico{display:block;width:100%;height:auto;margin-top:14px;overflow:visible;}
+        #loginScreen .vt-linha{fill:none;stroke:#38BDF8;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0;}
+        #loginScreen .vt-ponto{fill:#FCD34D;}
+        #loginScreen .vt-halo{fill:#FCD34D;opacity:0;animation:vtHalo 2.4s ease-out 2.6s infinite;}
+        #loginScreen .vt-ponto,#loginScreen .vt-halo{transform-box:fill-box;transform-origin:center;}
+        /* aviso que troca sozinho, com a barrinha do tempo até o próximo */
+        #loginScreen .vt-aviso{display:flex;align-items:center;gap:10px;position:relative;overflow:hidden;}
+        #loginScreen .vt-aviso-txt{flex:1;min-width:0;}
+        #loginScreen .vt-aviso-txt strong{display:block;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        #loginScreen .vt-aviso-txt small{display:block;font-size:11.5px;color:var(--ls-texto-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+        #loginScreen .vt-aviso-hora{align-self:flex-start;font-size:10.5px;color:var(--ls-texto-3);}
+        #loginScreen .vt-aviso::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(56,189,248,.7),rgba(56,189,248,0));transform-origin:left;transform:scaleX(0);}
+        #loginScreen .vt-aviso.troca::after{animation:vtTempo var(--vt-troca,4.2s) linear both;}
+        #loginScreen .vt-aviso.troca .vt-ic,#loginScreen .vt-aviso.troca .vt-aviso-txt{animation:vtTroca .45s cubic-bezier(.2,.8,.2,1) both;}
+        #loginScreen .vt-aviso.troca .vt-aviso-txt{animation-delay:.05s;}
+        /* meta do trimestre: percentual com anel de progresso */
+        #loginScreen .vt-meta-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+        #loginScreen .vt-valor-p{font-size:clamp(20px,1.8vw,24px);margin:10px 0 3px;}
+        #loginScreen .vt-anel{width:44px;height:44px;flex-shrink:0;margin-top:6px;transform:rotate(-90deg);overflow:visible;}
+        #loginScreen .vt-anel circle{fill:none;stroke-width:4.5;}
+        #loginScreen .vt-anel-trilho{stroke:rgba(125,211,252,.16);}
+        #loginScreen .vt-anel-prog{stroke:#FCD34D;stroke-linecap:round;stroke-dasharray:100;filter:drop-shadow(0 0 4px rgba(252,211,77,.45));}
+        /* animação de entrada (classe vt-anima ligada pelo script; sem ela tudo aparece pronto) */
+        #loginScreen .vitrine.vt-anima .vt-rotulo{animation:lsSurgir .6s ease .2s both;}
+        #loginScreen .vitrine.vt-anima .vt-item{animation:vtSobe .7s cubic-bezier(.2,.8,.2,1) both;}
+        #loginScreen .vitrine.vt-anima .vt-i1{animation-delay:.35s;}
+        #loginScreen .vitrine.vt-anima .vt-i2{animation-delay:.5s;}
+        #loginScreen .vitrine.vt-anima .vt-i3{animation-delay:.65s;}
+        #loginScreen .vitrine.vt-anima .vt-linha{animation:vtLinha 1.6s cubic-bezier(.4,.1,.2,1) .8s both;}
+        #loginScreen .vitrine.vt-anima .vt-area{animation:lsAparecer .8s ease 1.7s both;}
+        #loginScreen .vitrine.vt-anima .vt-ponto{animation:vtPonto .4s cubic-bezier(.2,.8,.2,1) 2.3s both;}
+        #loginScreen .vitrine.vt-anima .vt-anel-prog{animation:vtAnel 1.4s cubic-bezier(.2,.8,.2,1) .95s both;}
+        @keyframes vtSobe{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
+        @keyframes vtFlutua{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+        @keyframes vtPulso{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%,100%{box-shadow:0 0 0 7px rgba(52,211,153,0);}}
+        @keyframes vtLinha{from{stroke-dashoffset:1;}to{stroke-dashoffset:0;}}
+        @keyframes vtPonto{from{transform:scale(0);}to{transform:scale(1);}}
+        @keyframes vtHalo{0%{opacity:.55;transform:scale(1);}100%{opacity:0;transform:scale(3.4);}}
+        @keyframes vtAnel{from{stroke-dashoffset:100;}}
+        @keyframes vtTroca{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+        @keyframes vtTempo{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+        /* recursos, em selos compactos */
+        #loginScreen .auth-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;max-width:600px;}
+        #loginScreen .auth-chips li{
+            display:inline-flex;align-items:center;gap:6px;padding:6px 11px 6px 9px;border-radius:999px;font-size:12.5px;font-weight:500;
+            color:rgba(225,235,255,.82);background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(148,190,255,.14);
+        }
+        #loginScreen .auth-chips i{color:var(--ls-ceu);font-size:15px;}
+        /* rodapé com o logotipo da Reis Tecnologia (posicionado por cima, não ocupa espaço no layout) */
+        #loginScreen .auth-lado-marca,#loginScreen .auth-lado-rodape{position:relative;z-index:1;}
+        #loginScreen .auth-lado-rodape{font-size:12px;color:rgba(225,235,255,.42);text-shadow:0 1px 10px rgba(2,6,23,.95),0 0 2px rgba(2,6,23,.9);}
+        #loginScreen .auth-lado-logo{position:absolute;left:0;bottom:calc(100% + 8px);height:34px;width:auto;pointer-events:none;opacity:.9;filter:drop-shadow(0 2px 10px rgba(2,6,23,.9));}
+
+        /* ---------- Cartão de acesso ---------- */
+        #loginScreen .auth-direita{flex:.9 1 0;min-width:0;position:relative;display:flex;align-items:center;justify-content:center;padding:40px 28px;}
+        #loginScreen .auth-direita::before{
+            content:'';position:absolute;width:460px;height:460px;max-width:100%;border-radius:50%;z-index:-1;
+            background:radial-gradient(circle,rgba(56,189,248,.14),transparent 68%);filter:blur(10px);
+        }
+        #loginScreen .login-box{
+            width:100%;max-width:448px;text-align:left;color:var(--ls-texto);border-radius:22px;padding:40px 38px 26px;
+            background:linear-gradient(180deg,#13213F,#101C37);
+            box-shadow:0 44px 90px -28px rgba(2,6,23,.75),0 0 0 1px rgba(148,190,255,.10),inset 0 1px 0 rgba(255,255,255,.05);
+        }
+        #loginScreen .auth-card-marca{text-align:center;margin-bottom:26px;}
+        #loginScreen .auth-card-nome{display:inline-flex;align-items:center;gap:11px;font-family:'Space Grotesk','Segoe UI',sans-serif;font-size:29px;font-weight:700;letter-spacing:-.015em;color:#fff;}
+        #loginScreen .auth-card-nome .auth-marca{width:40px;height:40px;border-radius:11px;}
+        #loginScreen .auth-card-marca p{color:var(--ls-texto-2);font-size:14px;margin:3px 0 0;}
+        #loginScreen #loginSaudacao strong{color:#fff;font-weight:600;}
+        #loginScreen .login-tabs{display:flex;border-bottom:2px solid var(--ls-linha);margin:0 0 24px;gap:2px;}
+        #loginScreen .login-tab{
+            flex:1 1 auto;white-space:nowrap;padding:11px 6px 12px;font-family:inherit;font-size:14px;font-weight:500;
+            color:var(--ls-texto-2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;
+        }
+        #loginScreen .login-tab:hover{color:var(--ls-texto);}
+        #loginScreen .login-tab.active{color:#fff;font-weight:600;border-bottom-color:var(--ls-ceu);}
+        #loginScreen .login-tab:focus-visible{outline:2px solid var(--ls-ceu);outline-offset:2px;border-radius:4px;}
+        #loginScreen .login-tab-panel{display:none;}
+        #loginScreen .login-tab-panel.active{display:block;animation:lsAparecer .22s ease both;}
+        #loginScreen .input-group{margin-bottom:16px;}
+        #loginScreen .input-group label{display:block;font-size:13px;font-weight:600;color:var(--ls-texto);margin-bottom:6px;}
+        #loginScreen .campo-senha{position:relative;}
+        #loginScreen .input-group input{
+            width:100%;padding:12px 14px;font-family:inherit;font-size:14px;border-radius:10px;
+            border:1px solid var(--ls-linha);background:var(--ls-campo);color:var(--ls-texto);transition:border-color .15s,box-shadow .15s;
+        }
+        #loginScreen .campo-senha input{padding-right:2.6rem;}
+        #loginScreen .input-group input::placeholder{color:var(--ls-texto-3);}
+        #loginScreen .input-group input:focus{outline:none;border-color:var(--ls-ceu);box-shadow:0 0 0 3px rgba(56,189,248,.18);}
+        #loginScreen .input-group input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px var(--ls-campo) inset;-webkit-text-fill-color:var(--ls-texto);caret-color:var(--ls-texto);}
+        #loginScreen .pass-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ls-texto-3);font-size:18px;padding:4px;line-height:1;border-radius:6px;}
+        #loginScreen .pass-toggle:hover,#loginScreen .pass-toggle:focus-visible{color:var(--ls-texto);}
+        #loginScreen .pass-toggle:focus-visible{outline:2px solid var(--ls-ceu);outline-offset:1px;}
+        #loginScreen .caps-lock{display:flex;align-items:center;gap:5px;color:#FCD34D;font-size:11.5px;margin-top:5px;}
+        #loginScreen .caps-lock[hidden]{display:none;}
+        #loginScreen .alert{margin:0 0 14px;padding:10px 12px;border:none;border-radius:9px;font-size:13px;line-height:1.45;}
+        #loginScreen .alert-error{background:rgba(248,113,113,.12);color:#FCA5A5;}
+        #loginScreen .alert-success{background:rgba(52,211,153,.12);color:#6EE7B7;}
+        #loginScreen .login-lembrar{display:inline-flex;align-items:center;gap:8px;margin:-2px 0 14px;cursor:pointer;user-select:none;font-size:13px;color:var(--ls-texto-2);}
+        #loginScreen .login-lembrar input{width:16px;height:16px;margin:0;accent-color:var(--ls-ceu);cursor:pointer;}
+        #loginScreen .login-lembrar:hover{color:var(--ls-texto);}
+        #loginScreen .login-lembrar input:focus-visible{outline:2px solid var(--ls-ceu);outline-offset:2px;}
+        #loginScreen .ls-botao{
+            width:100%;padding:13px;font-family:inherit;font-size:15px;font-weight:600;color:#fff;border:none;border-radius:10px;margin-top:4px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            background:linear-gradient(135deg,#1565C0,#0288D1);box-shadow:0 10px 22px -10px rgba(14,165,233,.8),inset 0 1px 0 rgba(255,255,255,.18);
+            transition:filter .15s,transform .1s;
+        }
+        #loginScreen .ls-botao:hover{filter:brightness(1.1);}
+        #loginScreen .ls-botao:active:not(:disabled){transform:translateY(1px);}
+        #loginScreen .ls-botao:focus-visible{outline:2px solid var(--ls-tinta);outline-offset:3px;}
+        #loginScreen .ls-botao:disabled{opacity:.85;cursor:wait;filter:none;}
+        #loginScreen .login-esqueci{
+            display:flex;align-items:center;justify-content:center;gap:6px;margin:16px auto 0;background:none;border:none;font-family:inherit;
+            color:var(--ls-tinta);font-size:13.5px;font-weight:500;cursor:pointer;padding:4px 8px;border-radius:6px;
+        }
+        #loginScreen .login-esqueci i{color:var(--ls-ceu);font-size:16px;}
+        #loginScreen .login-esqueci:hover{text-decoration:underline;text-underline-offset:3px;}
+        #loginScreen .login-esqueci:focus-visible{outline:2px solid var(--ls-ceu);outline-offset:2px;}
+        #loginScreen .login-seguro{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;color:var(--ls-texto-2);font-size:12.5px;}
+        #loginScreen .login-versao{margin:8px 0 0;text-align:center;font-size:12px;color:var(--ls-texto-3);}
+        /* entrada da tela */
+        #loginScreen.entrando .login-box{animation:lsSubir .6s cubic-bezier(.2,.8,.2,1) both;}
+        #loginScreen.entrando .auth-lado-marca,#loginScreen.entrando .auth-chips li{animation:lsSurgir .6s cubic-bezier(.2,.8,.2,1) both;}
+        #loginScreen.entrando .auth-chips li:nth-child(1){animation-delay:.8s;}
+        #loginScreen.entrando .auth-chips li:nth-child(2){animation-delay:.88s;}
+        #loginScreen.entrando .auth-chips li:nth-child(3){animation-delay:.96s;}
+        #loginScreen.entrando .auth-chips li:nth-child(4){animation-delay:1.04s;}
+        @keyframes lsSubir{from{opacity:0;transform:translateY(22px) scale(.985);}to{opacity:1;transform:none;}}
+        @keyframes lsSurgir{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+        @keyframes lsAparecer{from{opacity:0;}to{opacity:1;}}
+
+        /* ---------- Horizonte de colunas de gráfico ao fundo ----------
+           Desenho gerado pelo código (montarHorizonte): colunas, linha de tendência que
+           se traça ao abrir a tela e pontos que acendem aos poucos. Só decoração. */
+        #loginScreen .horizonte{
+            position:fixed;left:0;right:0;bottom:0;height:clamp(110px,24vh,230px);z-index:-1;pointer-events:none;
+            opacity:0;transform:translateY(16px);transition:opacity 1.6s ease .25s,transform 1.6s cubic-bezier(.2,.8,.2,1) .25s;
+            -webkit-mask-image:linear-gradient(to top,#000 38%,rgba(0,0,0,.4) 72%,transparent);
+            mask-image:linear-gradient(to top,#000 38%,rgba(0,0,0,.4) 72%,transparent);
+        }
+        #loginScreen .horizonte.pronto{opacity:1;transform:none;}
+        #loginScreen .horizonte::before{
+            content:'';position:absolute;left:8%;right:8%;bottom:-45%;height:95%;border-radius:50%;
+            background:radial-gradient(ellipse at center,rgba(56,189,248,.15),transparent 70%);
+        }
+        #loginScreen .horizonte svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+        #loginScreen .hz-grade{fill:none;stroke:rgba(148,190,255,.08);stroke-width:1;stroke-dasharray:4 6;}
+        #loginScreen .hz-fundo{fill:#16397A;opacity:.5;}
+        #loginScreen .hz-linha{fill:none;stroke:rgba(125,211,252,.42);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 2.8s cubic-bezier(.4,.1,.2,1) .7s;}
+        #loginScreen .horizonte.pronto .hz-linha{stroke-dashoffset:0;}
+        #loginScreen .hz-pontos circle{fill:#7DD3FC;fill-opacity:.22;transition:fill 1.8s ease,fill-opacity 1.8s ease;}
+        #loginScreen .hz-pontos circle.acesa{fill:#FCD34D;fill-opacity:.9;}
+        #loginScreen .hz-frente{fill:#050D24;}
+        #loginScreen .hz-seg{fill:rgba(56,189,248,.09);}
+        #loginScreen .hz-topos rect{fill:#38BDF8;fill-opacity:.22;transition:fill 1.8s ease,fill-opacity 1.8s ease;}
+        #loginScreen .hz-topos rect.acesa{fill:#FCD34D;fill-opacity:.72;}
+
+        @media (max-width:960px){
+            #loginScreen .auth-lado{display:none;}
+            #loginScreen .auth-direita{flex:1 1 auto;padding:28px 16px;}
+        }
+        /* telas mais baixas (notebooks): os selos saem primeiro; em telas bem baixas, sai a prévia e voltam os selos */
+        @media (min-width:961px) and (max-height:800px){
+            #loginScreen .auth-lado{padding-top:32px;padding-bottom:28px;}
+            #loginScreen .auth-titulo{margin-bottom:24px;}
+            #loginScreen .vitrine{margin-bottom:0;}
+            #loginScreen .auth-chips{display:none;}
+        }
+        @media (min-width:961px) and (max-height:620px){
+            #loginScreen .vitrine{display:none;}
+            #loginScreen .auth-chips{display:flex;}
+        }
+        @media (max-width:520px){
+            #loginScreen .login-box{padding:30px 20px 22px;border-radius:18px;}
+            #loginScreen .auth-card-nome{font-size:24px;}
+            #loginScreen .login-tab{font-size:13px;}
+            #loginScreen .input-group input{font-size:16px;} /* evita o zoom automático do iPhone ao tocar no campo */
+        }
+        @media (prefers-reduced-motion:reduce){
+            #loginScreen.entrando .login-box,#loginScreen.entrando .auth-lado-marca,#loginScreen.entrando .auth-chips li,
+            #loginScreen .login-tab-panel.active,
+            #loginScreen .vt-card,#loginScreen .vt-pulso,#loginScreen .vt-halo,
+            #loginScreen .vitrine.vt-anima *,#loginScreen .vt-aviso.troca *,#loginScreen .vt-aviso.troca::after{animation:none !important;}
+            #loginScreen .horizonte,#loginScreen .hz-linha,#loginScreen .hz-pontos circle,#loginScreen .hz-topos rect{transition:none;}
+            #loginScreen .horizonte{transform:none;}
+        }
         .info-box{background:#e3f2fd;border-left:4px solid #2196f3;padding:12px;margin-bottom:25px;border-radius:4px;font-size:13px;color:#1565c0;}
         .form-group{margin-bottom:20px;}
         .form-group label{display:block;margin-bottom:8px;color:#555;font-weight:500;font-size:14px;}
@@ -63,7 +387,7 @@
         .alert{padding:12px;border-radius:6px;margin-bottom:15px;display:none;font-size:14px;}
         .alert-error{background:#ffebee;color:#c62828;border:1px solid #ef9a9a;}
         .alert-success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;}
-        .pending-screen{display:none;min-height:100vh;background:#0F172A;align-items:center;justify-content:center;padding:20px;}
+        .pending-screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;}
         .pending-card{background:white;padding:50px 40px;border-radius:20px;text-align:center;max-width:500px;}
         .pending-icon{font-size:80px;margin-bottom:20px;}
         .dashboard{display:none;min-height:100vh;}
@@ -541,63 +865,115 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- LOGIN -->
-<div id="loginScreen" class="login-container">
-    <div class="login-card">
-        <div class="login-brand">
-            <div class="login-brand-icon"><i class="ti ti-chart-histogram"></i></div>
-            <h1>Sistema Power BI</h1>
-            <p>Business Intelligence</p>
+<!-- Tela de acesso no padrão do CondoGest e do OdontoWorld: à esquerda o painel do Sistema
+     Power BI, com a frase escrita pela caneta e o gráfico montado no fim (some no celular);
+     à direita o cartão de acesso. Os IDs e as funções são os mesmos de antes. -->
+<div id="loginScreen">
+    <!-- Horizonte de colunas de gráfico ao fundo (desenhado por montarHorizonte; só decoração) -->
+    <div class="horizonte" aria-hidden="true"></div>
+    <section class="auth-lado">
+        <div class="auth-lado-marca"><span class="auth-marca"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="pbMarca1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs><rect x="5.5" y="19" width="5" height="8" rx="1.2" fill="url(#pbMarca1)" opacity=".72"/><rect x="13.5" y="13" width="5" height="14" rx="1.2" fill="url(#pbMarca1)" opacity=".88"/><rect x="21.5" y="16.5" width="5" height="10.5" rx="1.2" fill="url(#pbMarca1)" opacity=".72"/><path d="M5 14.5 13.5 9 19.5 11.5 26.5 5" fill="none" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26.5" cy="5" r="2.2" fill="#FDE68A"/><path d="M3.5 28h25" stroke="#FDE68A" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>Sistema Power BI</span></div>
+        <div class="auth-lado-texto">
+            <h1 class="auth-titulo">Seus painéis Power BI em um só lugar e com acesso seguro</h1>
+            <div class="caneta" aria-hidden="true"><div class="caneta-mov"></div></div>
+            <!-- Prévia do portal: só decoração, com valores fictícios fixos no código.
+                 Não lê nada do banco de dados (nesta tela ninguém entrou ainda). -->
+            <div class="vitrine" aria-hidden="true">
+                <div class="vt-rotulo"><span class="vt-pulso"></span>Prévia do portal<span class="vt-rotulo-nota">&middot; dados ilustrativos</span></div>
+                <div class="vt-grade">
+                    <div class="vt-item vt-i1"><div class="vt-card">
+                        <div class="vt-topo"><span class="vt-ic azul"><i class="ti ti-chart-line"></i></span><span>Acessos aos painéis</span><span class="vt-chip">Novembro</span></div>
+                        <div class="vt-valor" id="vtAcessos">1.284</div>
+                        <div class="vt-variacao"><i class="ti ti-trending-up"></i><span><span id="vtVariacao">18%</span> a mais que em outubro</span></div>
+                        <svg class="vt-grafico" viewBox="0 0 260 64"><defs><linearGradient id="pbVtArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38BDF8" stop-opacity=".32"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0"/></linearGradient></defs><path class="vt-area" d="M4.0 56.0C7.7 54.9 18.9 50.0 26.4 49.3C33.8 48.7 41.3 53.1 48.7 52.0C56.2 50.9 63.6 43.8 71.1 42.7C78.5 41.6 86.0 46.4 93.5 45.3C100.9 44.2 108.4 37.1 115.8 36.0C123.3 34.9 130.7 39.8 138.2 38.7C145.6 37.6 153.1 30.4 160.5 29.3C168.0 28.2 175.5 33.1 182.9 32.0C190.4 30.9 197.8 25.1 205.3 22.7C212.7 20.2 220.2 19.8 227.6 17.3C235.1 14.9 246.3 9.6 250.0 8.0V64H4.0Z" fill="url(#pbVtArea)"/><path class="vt-linha" d="M4.0 56.0C7.7 54.9 18.9 50.0 26.4 49.3C33.8 48.7 41.3 53.1 48.7 52.0C56.2 50.9 63.6 43.8 71.1 42.7C78.5 41.6 86.0 46.4 93.5 45.3C100.9 44.2 108.4 37.1 115.8 36.0C123.3 34.9 130.7 39.8 138.2 38.7C145.6 37.6 153.1 30.4 160.5 29.3C168.0 28.2 175.5 33.1 182.9 32.0C190.4 30.9 197.8 25.1 205.3 22.7C212.7 20.2 220.2 19.8 227.6 17.3C235.1 14.9 246.3 9.6 250.0 8.0" pathLength="1"/><circle class="vt-halo" cx="250" cy="8" r="3.5"/><circle class="vt-ponto" cx="250" cy="8" r="3.5"/></svg>
+                    </div></div>
+                    <div class="vt-item vt-i2"><div class="vt-card vt-aviso" id="vtAviso">
+                        <span class="vt-ic verde" id="vtAvisoIc"><i class="ti ti-eye"></i></span>
+                        <div class="vt-aviso-txt"><strong id="vtAvisoTit">Novo acesso</strong><small id="vtAvisoSub">Dashboard Vendas &middot; Equipe Comercial</small></div>
+                        <span class="vt-aviso-hora">agora</span>
+                    </div></div>
+                    <div class="vt-item vt-i3"><div class="vt-card">
+                        <div class="vt-topo"><span class="vt-ic ambar"><i class="ti ti-target-arrow"></i></span><span>Meta do trimestre</span></div>
+                        <div class="vt-meta-linha"><div class="vt-valor vt-valor-p" id="vtMeta">87,4%</div><svg class="vt-anel" viewBox="0 0 40 40"><circle class="vt-anel-trilho" cx="20" cy="20" r="15"/><circle class="vt-anel-prog" cx="20" cy="20" r="15" pathLength="100" style="stroke-dashoffset:12.6"/></svg></div>
+                        <div class="vt-variacao"><i class="ti ti-arrow-up-right"></i><span>acima do previsto</span></div>
+                    </div></div>
+                </div>
+            </div>
+            <ul class="auth-chips">
+                <li><i class="ti ti-chart-pie"></i>Painéis Power BI</li>
+                <li><i class="ti ti-users-group"></i>Acesso por grupo</li>
+                <li><i class="ti ti-presentation-analytics"></i>Analytics de uso</li>
+                <li><i class="ti ti-shield-lock"></i>Dados protegidos</li>
+            </ul>
+        </div>
+        <div class="auth-lado-rodape"><img class="auth-lado-logo" src="data:image/webp;base64,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" alt="" aria-hidden="true" width="53" height="34" decoding="async">Reis Tecnologia</div>
+    </section>
+
+    <div class="auth-direita">
+    <div class="login-box">
+        <div class="auth-card-marca">
+            <div class="auth-card-nome"><span class="auth-marca"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="pbMarca2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs><rect x="5.5" y="19" width="5" height="8" rx="1.2" fill="url(#pbMarca2)" opacity=".72"/><rect x="13.5" y="13" width="5" height="14" rx="1.2" fill="url(#pbMarca2)" opacity=".88"/><rect x="21.5" y="16.5" width="5" height="10.5" rx="1.2" fill="url(#pbMarca2)" opacity=".72"/><path d="M5 14.5 13.5 9 19.5 11.5 26.5 5" fill="none" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26.5" cy="5" r="2.2" fill="#FDE68A"/><path d="M3.5 28h25" stroke="#FDE68A" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>Sistema Power BI</span></div>
+            <p id="loginSaudacao">Business Intelligence</p>
         </div>
 
+        <!-- Abas Entrar / Criar conta -->
         <div class="login-tabs">
-            <div class="login-tab active" onclick="switchLoginTab('entrar')">Entrar</div>
-            <div class="login-tab" onclick="switchLoginTab('cadastrar')">Cadastrar</div>
+            <button type="button" class="login-tab active" onclick="limparAvisosLogin();switchLoginTab('entrar')">Entrar</button>
+            <button type="button" class="login-tab" onclick="limparAvisosLogin();switchLoginTab('cadastrar')">Criar conta</button>
         </div>
 
-        <div id="loginAlert" class="alert alert-error"></div>
-        <div id="loginSuccess" class="alert alert-success"></div>
+        <div id="loginAlert" class="alert alert-error" role="alert"></div>
+        <div id="loginSuccess" class="alert alert-success" role="status"></div>
 
-        <!-- TAB ENTRAR -->
+        <!-- ABA ENTRAR -->
         <div id="tabEntrar" class="login-tab-panel active">
             <form id="loginForm">
-                <div class="login-field">
-                    <label>E-mail</label>
-                    <div class="field-wrap"><input type="email" id="loginEmail" placeholder="seu@email.com" required></div>
+                <div class="input-group">
+                    <label for="loginEmail">E-mail</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" required>
                 </div>
-                <div class="login-field">
-                    <label>Senha</label>
-                    <div class="field-wrap">
-                        <input type="password" id="loginPassword" placeholder="Sua senha" required>
-                        <button type="button" class="eye-toggle" onclick="togglePasswordVisibility('loginPassword',this)"><i class="ti ti-eye"></i></button>
+                <div class="input-group">
+                    <label for="loginPassword">Senha</label>
+                    <div class="campo-senha">
+                        <input type="password" id="loginPassword" placeholder="Digite sua senha" autocomplete="current-password" required>
+                        <button type="button" class="pass-toggle" title="Mostrar senha" aria-label="Mostrar senha" onclick="togglePasswordVisibility('loginPassword',this)"><i class="ti ti-eye"></i></button>
                     </div>
+                    <div class="caps-lock" id="caps-loginPassword" hidden><i class="ti ti-alert-triangle"></i> Caps Lock ligado</div>
                 </div>
-                <button type="submit" class="btn-login" id="btnLogin"><i class="ti ti-login"></i> Entrar</button>
+                <label class="login-lembrar" title="Guarda só o e-mail neste aparelho, nunca a senha. Não marque em computador compartilhado.">
+                    <input type="checkbox" id="loginLembrar"> Lembrar meu e-mail
+                </label>
+                <button type="submit" class="ls-botao" id="btnLogin"><i class="ti ti-login"></i> Entrar</button>
+                <button type="button" class="login-esqueci" onclick="esqueciSenha()"><i class="ti ti-key"></i> Esqueci minha senha</button>
             </form>
         </div>
 
-        <!-- TAB CADASTRAR -->
+        <!-- ABA CRIAR CONTA -->
         <div id="tabCadastrar" class="login-tab-panel">
             <form id="registerForm">
-                <div class="login-field">
-                    <label>Nome Completo</label>
-                    <div class="field-wrap"><input type="text" id="registerName" placeholder="Seu nome completo" required></div>
+                <div class="input-group">
+                    <label for="registerName">Nome completo</label>
+                    <input type="text" id="registerName" placeholder="Seu nome completo" autocomplete="name" required>
                 </div>
-                <div class="login-field">
-                    <label>E-mail</label>
-                    <div class="field-wrap"><input type="email" id="registerEmail" placeholder="seu@email.com" required></div>
+                <div class="input-group">
+                    <label for="registerEmail">E-mail</label>
+                    <input type="email" id="registerEmail" placeholder="seu@email.com" autocomplete="email" required>
                 </div>
-                <div class="login-field">
-                    <label>Senha</label>
-                    <div class="field-wrap">
-                        <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
-                        <button type="button" class="eye-toggle" onclick="togglePasswordVisibility('registerPassword',this)"><i class="ti ti-eye"></i></button>
+                <div class="input-group">
+                    <label for="registerPassword">Senha</label>
+                    <div class="campo-senha">
+                        <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
+                        <button type="button" class="pass-toggle" title="Mostrar senha" aria-label="Mostrar senha" onclick="togglePasswordVisibility('registerPassword',this)"><i class="ti ti-eye"></i></button>
                     </div>
+                    <div class="caps-lock" id="caps-registerPassword" hidden><i class="ti ti-alert-triangle"></i> Caps Lock ligado</div>
                 </div>
-                <button type="submit" class="btn-register" id="btnRegister"><i class="ti ti-user-plus"></i> Criar Conta</button>
+                <button type="submit" class="ls-botao" id="btnRegister"><i class="ti ti-user-plus"></i> Criar conta</button>
             </form>
         </div>
 
-        <div class="login-footer">v1.0 Reis Consultoria ©2026</div>
+        <div class="login-seguro"><i class="ti ti-lock"></i> Conexão segura e dados protegidos</div>
+        <p class="login-versao">v1.0 Reis Tecnologia &copy; 2026</p>
+    </div>
     </div>
 </div>
 
@@ -611,7 +987,7 @@
         </div>
         <p style="color:#64748B;margin-bottom:24px;font-size:14px;line-height:1.7;">O administrador precisa aprovar seu acesso.<br>Você será notificado quando seu cadastro for aprovado.</p>
         <button onclick="logout()" class="btn-login" style="max-width:200px;margin:0 auto;"><i class="ti ti-arrow-left"></i> Voltar</button>
-        <div class="login-footer">v1.0 Reis Consultoria ©2026</div>
+        <div class="login-footer">v1.0 Reis Tecnologia ©2026</div>
     </div>
 </div>
 
@@ -1399,12 +1775,12 @@ function getPainéisEfetivos(){return new Set([...(usuarioLogado.painéisPermiti
 
 // ══ AUTH ══
 auth.onAuthStateChanged(async user=>{if(user){try{const doc=await db.collection('usuarios').doc(user.uid).get();if(doc.exists){usuarioLogado={id:user.uid,...doc.data()};if(usuarioLogado.status==='pendente')mostrarPendente();else if(usuarioLogado.status==='aprovado'){await registrarSessao(user.uid);await carregarPermissoesGrupos();mostrarDashboard();}}}catch(e){console.error(e);}}});
-document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=document.getElementById('btnLogin');btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Entrando...';try{await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value,document.getElementById('loginPassword').value);}catch(e){mostrarErro('loginAlert','E-mail ou senha incorretos');btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Entrar';}});
+document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=document.getElementById('btnLogin');btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Entrando...';try{const emailLogin=document.getElementById('loginEmail').value.trim();await auth.signInWithEmailAndPassword(emailLogin,document.getElementById('loginPassword').value);lembrarEmailAposEntrar(emailLogin);}catch(e){mostrarErro('loginAlert','E-mail ou senha incorretos');btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Entrar';}});
 document.getElementById('registerForm').addEventListener('submit',async e=>{
     e.preventDefault();const btn=document.getElementById('btnRegister');btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Criando...';
     try{const ehP=await verificarPrimeiroUsuario();const nome=document.getElementById('registerName').value,email=document.getElementById('registerEmail').value;const c=await auth.createUserWithEmailAndPassword(email,document.getElementById('registerPassword').value);await db.collection('usuarios').doc(c.user.uid).set({nome,email,nivel:ehP?'admin':'viewer',status:ehP?'aprovado':'pendente',painéisPermitidos:[],fotoUrl:'',criadoEm:new Date()});if(ehP){await criarPaineisExemplo();mostrarSucesso('loginSuccess','✅ Admin criado! Faça login.');switchLoginTab('entrar');}else{await criarNotificacaoAdmins('novo_usuario','👤 Novo usuário aguardando aprovação',`${nome} (${email}) se cadastrou.`);mostrarSucesso('loginSuccess','✅ Conta criada! Aguarde aprovação.');switchLoginTab('entrar');}document.getElementById('registerForm').reset();}
     catch(e){let m='Erro ao criar conta';if(e.code==='auth/email-already-in-use')m='❌ E-mail já cadastrado';else if(e.code==='auth/weak-password')m='❌ Senha deve ter 6+ caracteres';mostrarErro('loginAlert',m);}
-    finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar Conta';}
+    finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Criar conta';}
 });
 document.getElementById('painelForm').addEventListener('submit',async e=>{e.preventDefault();try{await db.collection('paineis').add({nome:document.getElementById('nomePainel').value,link:document.getElementById('linkPainel').value,nivelMinimo:document.getElementById('nivelPainel').value,descricao:document.getElementById('descPainel').value.trim(),thumbnail:document.getElementById('thumbPainel').value.trim(),acessos:0,criadoEm:new Date()});document.getElementById('painelForm').reset();document.getElementById('thumbPreviewArea').style.display='none';carregarPaineisAdmin();alert('✅ Painel adicionado!');}catch(e){alert('Erro ao adicionar painel');}});
 
@@ -1428,7 +1804,7 @@ async function mostrarDashboard(){
     }
     carregarPaineis();iniciarControleInatividade();
 }
-async function logout(exp=false){if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}pararControleInatividade();await auth.signOut();if(exp){document.getElementById('dashboard').style.display='none';document.getElementById('loginScreen').style.display='flex';mostrarErro('loginAlert','⏰ Sessão encerrada por inatividade.');}else location.reload();}
+async function logout(exp=false){if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}pararControleInatividade();await auth.signOut();if(exp){document.getElementById('dashboard').style.display='none';document.getElementById('loginScreen').style.display='flex';try{prepararTelaLogin();}catch(e){console.warn('Tela de login:',e);}mostrarErro('loginAlert','⏰ Sessão encerrada por inatividade.');}else location.reload();}
 
 // ══ PAINÉIS ══
 async function carregarPaineis(){const snap=await db.collection('paineis').get();const container=document.getElementById('listaPaineis');container.innerHTML='';const nv={viewer:1,user:2,admin:3},perms=getPainéisEfetivos();let ok=[];snap.forEach(d=>{const p={id:d.id,...d.data()};if(usuarioLogado.nivel==='admin'||(nv[p.nivelMinimo]<=nv[usuarioLogado.nivel]&&perms.has(p.id)))ok.push(p);});
@@ -1571,6 +1947,575 @@ window.exportarLogCSV=exportarLogCSV;window.exportarPaineisCSV=exportarPaineisCS
 window.filtrarHistorico=filtrarHistorico;window.limparFiltrosHistorico=limparFiltrosHistorico;window.exportarHistoricoCSV=exportarHistoricoCSV;
 window.carregarSolicitarAcesso=carregarSolicitarAcesso;window.solicitarAcesso=solicitarAcesso;window.reenviarSolicAcesso=reenviarSolicAcesso;
 window.aprovarSolicAcesso=aprovarSolicAcesso;window.negarSolicAcesso=negarSolicAcesso;window.carregarSolicitacoesPendentes=carregarSolicitacoesPendentes;
+
+// ══ TELA DE LOGIN: frase escrita pela caneta ══
+// A caneta escreve a frase do painel (cada letra: contorno azul-céu que se preenche
+// de branco), sublinha "em um só lugar" e traça os eixos de um gráfico no fim da
+// frase. Quando a caneta sai, as barras sobem uma a uma, a linha de tendência é
+// traçada, os pontos aparecem e o último pulsa em âmbar. A frase fica parada para
+// leitura, se apaga e o ciclo recomeça.
+// Só roda com o painel visível (computador); com a aba escondida o navegador pausa.
+// Celular (painel escondido) e "reduzir movimento": frase e gráfico aparecem prontos.
+// Leitores de tela leem a frase uma vez (so-leitor).
+const LOGIN_FRASE = 'Seus painéis Power BI em um só lugar e com acesso seguro'; // "Power BI", "em um só lugar" e "acesso seguro" sempre na mesma linha
+const LOGIN_DESTAQUE = 'em um só lugar'; // sublinhado pela caneta
+const LOGIN_TEMPO = { inicio: 650, chega: 380, risca: 520, ida: 620, graf: 1200, sai: 480, parada: 8000, apaga: 450, onda: 7, respiro: 600 };
+
+// Gráfico (viewBox 84 x 72): a caneta traça o eixo vertical de cima para baixo e o horizontal
+// da esquerda para a direita. Depois sobem 5 barras (a última em âmbar) e a linha de tendência.
+const LOGIN_GRAF_CONTORNO = 'M8 5V66H82';
+function _curvaSuave(p) { // linha suave passando pelos pontos (Catmull-Rom → Bézier)
+    let d = `M${p[0].x} ${p[0].y}`;
+    for (let i = 0; i < p.length - 1; i++) {
+        const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+        const f = v => v.toFixed(1);
+        d += `C${f(p1.x + (p2.x - p0.x) / 6)} ${f(p1.y + (p2.y - p0.y) / 6)} ${f(p2.x - (p3.x - p1.x) / 6)} ${f(p2.y - (p3.y - p1.y) / 6)} ${f(p2.x)} ${f(p2.y)}`;
+    }
+    return d;
+}
+function grafLoginSvg() {
+    const BASE = 65, L = 9;
+    const BARRAS = [{ x: 14, h: 17 }, { x: 27.5, h: 30 }, { x: 41, h: 23 }, { x: 54.5, h: 39 }, { x: 68, h: 52 }];
+    const pts = BARRAS.map(b => ({ x: b.x + L / 2, y: BASE - b.h - 7 }));
+    const ult = BARRAS.length - 1;
+    let barras = '', recorte = '', pontos = '';
+    BARRAS.forEach((b, k) => {
+        const y = BASE - b.h;
+        barras += `<g class="gf-barra${k === ult ? ' gf-destaque' : ''}" style="--k:${k}">`
+            + `<rect x="${b.x}" y="${y}" width="${L}" height="${b.h}" rx="1.4" fill="url(#pbGrafBarra${k === ult ? 'D' : ''})"/>`
+            + `<rect class="gf-topo" x="${b.x}" y="${y}" width="${L}" height="1.2" rx=".6"/></g>`;
+        recorte += `<rect x="${b.x}" y="${y}" width="${L}" height="${b.h}"/>`;
+    });
+    pts.forEach((p, k) => {
+        pontos += `<circle class="gf-ponto${k === ult ? ' gf-fim' : ''}" style="--k:${k}" cx="${p.x}" cy="${p.y}" r="${k === ult ? 2.6 : 1.9}"/>`;
+    });
+    const fim = pts[ult];
+    return `<svg class="graf" viewBox="0 0 84 72" aria-hidden="true"><defs>`
+        + `<clipPath id="pbGrafRecorte">${recorte}</clipPath>`
+        + `<linearGradient id="pbGrafBarra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#2563EB" stop-opacity=".45"/></linearGradient>`
+        + `<linearGradient id="pbGrafBarraD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#F59E0B" stop-opacity=".6"/></linearGradient>`
+        + `<radialGradient id="pbGrafHalo"><stop offset="0" stop-color="#FBBF24" stop-opacity=".3"/><stop offset="1" stop-color="#FBBF24" stop-opacity="0"/></radialGradient>`
+        + `<linearGradient id="pbGrafLuz" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+        + `</defs>`
+        + `<ellipse class="gf-halo" cx="48" cy="40" rx="44" ry="32" fill="url(#pbGrafHalo)"/>`
+        + `<g class="gf-grade"><path d="M8 21H82M8 36H82M8 51H82"/></g>`
+        + barras
+        + `<g clip-path="url(#pbGrafRecorte)"><g class="gf-brilho-mov"><rect x="0" y="-10" width="14" height="100" fill="url(#pbGrafLuz)" transform="skewX(-22)"/></g></g>`
+        + `<path class="gf-contorno" d="${LOGIN_GRAF_CONTORNO}"/>`
+        + `<path class="gf-linha" d="${_curvaSuave(pts)}" pathLength="1"/>`
+        + `<circle class="gf-pulso" cx="${fim.x}" cy="${fim.y}" r="2.6"/>`
+        + pontos
+        + `<g transform="translate(82 18)"><path class="faisca f1" d="M0-5C.5-1 1-.5 5 0 1 .5.5 1 0 5-.5 1-1 .5-5 0-1-.5-.5-1 0-5z"/></g>`
+        + `<g transform="translate(50 9)"><path class="faisca f2" d="M0-3.6C.4-.7.7-.4 3.6 0 .7.4.4.7 0 3.6-.4.7-.7.4-3.6 0-.7-.4-.4-.7 0-3.6z"/></g>`
+        + `</svg>`;
+}
+
+// Caneta de corpo azul laqueado e partes de metal; a ponta fica na origem (0, 11)
+const LOGIN_CANETA_SVG =
+    '<svg viewBox="0 0 136 22" aria-hidden="true"><defs>' +
+    '<linearGradient id="pbCanetaCorpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7CB8FF"/><stop offset=".3" stop-color="#2F6FE0"/><stop offset=".7" stop-color="#173B8F"/><stop offset="1" stop-color="#0A1A45"/></linearGradient>' +
+    '<linearGradient id="pbCanetaMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8FAFC"/><stop offset=".45" stop-color="#CBD5E1"/><stop offset=".75" stop-color="#8A9BB4"/><stop offset="1" stop-color="#CBD5E1"/></linearGradient></defs>' +
+    '<path d="M0 11 5.5 9.4v3.2z" fill="#0F172A"/>' +
+    '<path d="M5 9.5 25 4.2v13.6L5 12.5z" fill="url(#pbCanetaMetal)"/>' +
+    '<rect x="25" y="3.6" width="3" height="14.8" fill="#E2E8F0"/>' +
+    '<rect x="28" y="3.4" width="88" height="15.2" fill="url(#pbCanetaCorpo)"/>' +
+    '<rect x="28" y="5.2" width="88" height="1.3" fill="#fff" opacity=".35"/>' +
+    '<rect x="70" y="3.4" width="4" height="15.2" fill="url(#pbCanetaMetal)"/>' +
+    '<rect x="116" y="3.4" width="2.6" height="15.2" fill="url(#pbCanetaMetal)"/>' +
+    '<path d="M118.6 3.4h8.6a7.6 7.6 0 0 1 0 15.2h-8.6z" fill="url(#pbCanetaCorpo)"/>' +
+    '<rect x="86" y=".6" width="38" height="3.4" rx="1.7" fill="url(#pbCanetaMetal)"/>' +
+    '<circle cx="87.6" cy="2.3" r="2.1" fill="#E2E8F0"/>' +
+    '</svg>';
+
+const _escritaLogin = { quadro: 0, espera: 0, ativa: false, volta: 0 };
+const _loginNaTela = () => { const t = document.getElementById('loginScreen'); return !!t && t.style.display !== 'none'; };
+const _reduzirMovimento = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+
+// Monta a frase letra por letra (uma vez), o gráfico e a caneta
+function montarFraseLogin() {
+    const h1 = document.querySelector('#loginScreen .auth-titulo');
+    if (!h1 || h1.getAttribute('data-montada')) return;
+    const palavras = LOGIN_FRASE.split(' ');
+    const html = palavras.map((p, k) => {
+        const letras = [...p].map(c => `<span class="esc-l">${escHtml(c)}</span>`).join('');
+        if (p === LOGIN_DESTAQUE) {
+            return `<span class="esc-p esc-destaque">${letras}`
+                + `<svg class="esc-risco" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 9C45 5 90 4 130 6S185 9 197 5" pathLength="1"/></svg></span>`;
+        }
+        return `<span class="esc-p">${letras}${k === palavras.length - 1 ? grafLoginSvg() : ''}</span>`;
+    }).join(' ');
+    h1.innerHTML = `<span class="so-leitor">${escHtml(LOGIN_FRASE)}</span><span class="esc" aria-hidden="true">${html}</span>`;
+    h1.setAttribute('data-montada', '1');
+    // Até a caneta começar, a frase fica pronta (se a animação não rodar, o texto continua legível)
+    h1.classList.add('escrito');
+    const mov = document.querySelector('#loginScreen .caneta-mov');
+    if (mov) mov.innerHTML = LOGIN_CANETA_SVG;
+}
+
+function escreverFraseLogin() {
+    const esc = _escritaLogin, T = LOGIN_TEMPO;
+    cancelAnimationFrame(esc.quadro); clearTimeout(esc.espera);
+    const t = document.getElementById('loginScreen');
+    const h1 = t && t.querySelector('.auth-titulo'), caixa = t && t.querySelector('.auth-lado-texto'), caneta = t && t.querySelector('.caneta');
+    if (!h1 || !caixa || !caneta) return;
+    const letras = [...h1.querySelectorAll('.esc-l')];
+    const risco = h1.querySelector('.esc-risco'), traco = risco && risco.querySelector('path');
+    const graf = h1.querySelector('.graf'), contorno = graf && graf.querySelector('.gf-contorno');
+    const mov = caneta.firstElementChild;
+    let tamGraf = 0;
+    const naTela = () => h1.isConnected && t.style.display !== 'none' && !!caixa.offsetParent;
+    // Frase pronta e parada (celular, "reduzir movimento", saiu da tela de login)
+    const pronto = () => {
+        cancelAnimationFrame(esc.quadro); clearTimeout(esc.espera); esc.ativa = false;
+        letras.forEach(l => { l.style.clipPath = ''; l.style.transitionDelay = ''; });
+        if (traco) { traco.style.strokeDashoffset = ''; traco.style.transition = ''; }
+        if (contorno) { contorno.style.strokeDasharray = ''; contorno.style.strokeDashoffset = ''; contorno.style.transition = ''; }
+        if (graf) graf.classList.remove('montando', 'desmontando', 'tracando');
+        if (risco) risco.classList.remove('riscando');
+        h1.classList.remove('apagando'); h1.classList.add('escrito');
+        caneta.classList.remove('visivel', 'saindo');
+    };
+    if (_reduzirMovimento() || !caixa.offsetParent || !letras.length) { pronto(); return; }
+    esc.ativa = true;
+    const volta = ++esc.volta; // um novo começo cancela a espera da fonte do anterior
+    // recomeço (ex.: a janela mudou de tamanho no meio da escrita): limpa tudo antes
+    letras.forEach(l => { l.classList.remove('traco', 'feito'); l.style.clipPath = ''; l.style.transitionDelay = ''; });
+    if (traco) { traco.style.transition = ''; traco.style.strokeDashoffset = ''; }
+    if (graf) graf.classList.remove('montando', 'desmontando', 'tracando');
+    if (risco) risco.classList.remove('riscando');
+    if (contorno) { contorno.style.transition = ''; contorno.style.strokeDasharray = ''; contorno.style.strokeDashoffset = ''; }
+    caneta.classList.remove('visivel', 'saindo');
+
+    // Roteiro (refeito a cada volta, com a fonte carregada e a largura atual): em cada
+    // letra a caneta primeiro se desloca (espaço, troca de linha) e depois escreve
+    let passos = [];
+    const roteiro = () => {
+        const r0 = letras.map(l => l.getBoundingClientRect());
+        passos = letras.map((l, i) => {
+            const anterior = i ? letras[i - 1].textContent : '';
+            const novaLinha = i > 0 && r0[i].top - r0[i - 1].top > 4;
+            const novaPalavra = i > 0 && !l.previousElementSibling;
+            let desloca = i === 0 || novaLinha ? 420 : novaPalavra ? 70 : 0;
+            if (novaPalavra && anterior === ',') desloca += 200;
+            return { desloca, escreve: 12 + r0[i].width * 0.95 + Math.random() * 10, novaLinha, novaPalavra };
+        });
+        if (contorno) {
+            tamGraf = contorno.getTotalLength();
+            contorno.style.transition = '';
+            contorno.style.strokeDasharray = String(tamGraf);
+            contorno.style.strokeDashoffset = String(tamGraf);
+        }
+    };
+    const suave = f => (f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
+    const ponta = (r, b, direita) => ({ x: (direita ? r.right : r.left) - b.left, y: r.top + r.height * 0.8 - b.top });
+    const por = (p, sobe = 0, gira = 0) => {
+        caneta.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+        mov.style.transform = `translateY(${(-sobe).toFixed(1)}px) rotate(${gira.toFixed(2)}deg)`;
+    };
+    const entre = (a, c, f) => ({ x: a.x + (c.x - a.x) * f, y: a.y + (c.y - a.y) * f });
+    const noRisco = (b, f) => {
+        const rr = risco.getBoundingClientRect(), pt = traco.getPointAtLength(f * traco.getTotalLength());
+        return { x: rr.left + (pt.x / 200) * rr.width - b.left, y: rr.top + (pt.y / 14) * rr.height - b.top };
+    };
+    const noGraf = (b, f) => { // ponto dos eixos do gráfico, em coordenadas da caixa
+        const m = contorno.getScreenCTM(), pt = contorno.getPointAtLength(f * tamGraf);
+        return { x: m.a * pt.x + m.c * pt.y + m.e - b.left, y: m.b * pt.x + m.d * pt.y + m.f - b.top };
+    };
+    let i = 0, tempo = 0, fase = 'letras', ultimo = null, deOnde = null;
+
+    function quadro(agora) {
+        if (!naTela()) { pronto(); return; }
+        tempo += ultimo === null ? 0 : Math.min(agora - ultimo, 50); // aba escondida: continua de onde parou
+        ultimo = agora;
+        const b = caixa.getBoundingClientRect();
+        let f, g;
+        if (fase === 'letras') {
+            for (;;) {
+                const p = passos[i], r = letras[i].getBoundingClientRect();
+                const ini = ponta(r, b, false), fim = ponta(r, b, true);
+                if (tempo < p.desloca) { // indo até o começo da letra
+                    f = tempo / p.desloca;
+                    const de = i ? ponta(letras[i - 1].getBoundingClientRect(), b, true) : { x: ini.x + 34, y: ini.y - 40 };
+                    por(entre(de, ini, i === 0 || p.novaLinha ? suave(f) : f), (p.novaLinha ? 12 : p.novaPalavra ? 4 : 0) * Math.sin(f * Math.PI));
+                    break;
+                }
+                g = (tempo - p.desloca) / p.escreve;
+                if (g < 1) { // escrevendo a letra, da esquerda para a direita
+                    letras[i].classList.add('traco');
+                    letras[i].style.clipPath = `inset(-35% ${((1 - g) * 100).toFixed(1)}% -35% -12%)`;
+                    por(entre(ini, fim, g), 2.5 * Math.sin(g * Math.PI), -2 * Math.sin(g * Math.PI));
+                    break;
+                }
+                letras[i].style.clipPath = 'inset(-35% -12% -35% -12%)'; letras[i].classList.add('traco', 'feito'); // letra inteira; computador lento: pode passar inteira num quadro só
+                tempo -= p.desloca + p.escreve; i += 1;
+                if (i >= letras.length) { fase = risco ? 'chega' : contorno ? 'ida' : 'sai'; deOnde = fim; break; }
+            }
+        }
+        if (fase === 'chega') { // vai até o começo do sublinhado
+            f = Math.min(1, tempo / T.chega);
+            por(entre(deOnde, noRisco(b, 0), suave(f)), 10 * Math.sin(f * Math.PI));
+            if (f >= 1) { tempo -= T.chega; fase = 'risca'; risco.classList.add('riscando'); }
+        }
+        if (fase === 'risca') { // sublinha "em um só lugar"
+            f = Math.min(1, tempo / T.risca);
+            traco.style.strokeDashoffset = String(1 - f);
+            por(noRisco(b, f), 0, -1.5 * Math.sin(f * Math.PI));
+            if (f >= 1) { tempo -= T.risca; deOnde = noRisco(b, 1); fase = contorno ? 'ida' : 'sai'; }
+        }
+        if (fase === 'ida') { // levanta e vai até o topo do eixo, no fim da frase
+            f = Math.min(1, tempo / T.ida);
+            por(entre(deOnde, noGraf(b, 0), suave(f)), 18 * Math.sin(f * Math.PI));
+            if (f >= 1) { tempo -= T.ida; fase = 'graf'; graf.classList.add('tracando'); }
+        }
+        if (fase === 'graf') { // traça o eixo vertical e depois o horizontal
+            f = Math.min(1, tempo / T.graf);
+            g = f * 0.85 + suave(f) * 0.15;
+            contorno.style.strokeDashoffset = String(tamGraf * (1 - g));
+            por(noGraf(b, g), 0, -1.2 * Math.sin(g * Math.PI * 2));
+            if (f >= 1) { tempo -= T.graf; fase = 'sai'; deOnde = noGraf(b, 1); graf.classList.add('montando'); }
+        }
+        if (fase === 'sai') { // levanta e some; a frase fica parada para leitura
+            f = Math.min(1, tempo / T.sai);
+            if (!caneta.classList.contains('saindo')) { caneta.classList.add('saindo'); caneta.classList.remove('visivel'); }
+            por(entre(deOnde, { x: deOnde.x + 30, y: deOnde.y - 38 }, suave(f)));
+            if (f >= 1) { esc.espera = setTimeout(apagar, T.parada); return; }
+        }
+        esc.quadro = requestAnimationFrame(quadro);
+    }
+
+    // Apaga numa onda da esquerda para a direita, desmonta o gráfico e recomeça
+    function apagar() {
+        if (!naTela()) { pronto(); return; }
+        letras.forEach((l, k) => { l.style.transitionDelay = (k * T.onda) + 'ms'; });
+        h1.classList.add('apagando');
+        if (traco) { traco.style.transition = 'stroke-dashoffset .6s ease'; traco.style.strokeDashoffset = '1'; }
+        if (graf) {
+            graf.classList.remove('montando'); graf.classList.add('desmontando');
+            contorno.style.strokeDashoffset = String(tamGraf);
+        }
+        esc.espera = setTimeout(() => {
+            letras.forEach(l => { l.classList.remove('traco', 'feito'); l.style.transitionDelay = ''; l.style.clipPath = ''; });
+            h1.classList.remove('apagando');
+            if (traco) traco.style.transition = '';
+            if (risco) risco.classList.remove('riscando');
+            if (graf) graf.classList.remove('desmontando', 'tracando');
+            esc.espera = setTimeout(escrever, T.respiro);
+        }, T.apaga + letras.length * T.onda);
+    }
+
+    function escrever() {
+        if (!naTela()) { pronto(); return; }
+        roteiro();
+        i = 0; tempo = 0; fase = 'letras'; ultimo = null; deOnde = null;
+        caneta.classList.remove('saindo'); caneta.classList.add('visivel');
+        esc.quadro = requestAnimationFrame(quadro);
+    }
+
+    h1.classList.remove('escrito', 'apagando');
+    // espera a fonte carregar; começa no máximo em 1,5 s
+    const fontes = document.fonts && document.fonts.ready
+        ? Promise.race([document.fonts.ready, new Promise(ok => setTimeout(ok, 1500))]) : Promise.resolve();
+    const comeco = Date.now();
+    fontes.then(() => {
+        if (!esc.ativa || volta !== esc.volta) return;
+        esc.espera = setTimeout(escrever, Math.max(0, T.inicio - (Date.now() - comeco)));
+    });
+}
+
+// ══ TELA DE LOGIN: prévia do portal (vitrine) ══
+// Três cartões que imitam o portal: acessos aos painéis, avisos que se revezam e a
+// meta do trimestre. Segurança: é só decoração. Todos os valores são fictícios e
+// fixos aqui no código; nada é lido do banco de dados (nesta tela ninguém entrou
+// ainda), o texto entra por textContent e a vitrine fica fora dos leitores de tela.
+const VITRINE_LOGIN = {
+    acessos: 1284, variacao: 18, meta: 87.4, troca: 4200,
+    avisos: [
+        { ic: 'ti-eye', cor: 'verde', tit: 'Novo acesso', sub: 'Dashboard Vendas · Equipe Comercial', valor: 1 },
+        { ic: 'ti-refresh', cor: 'azul', tit: 'Painel atualizado', sub: 'Relatório Financeiro · hoje, 06:00' },
+        { ic: 'ti-eye', cor: 'verde', tit: 'Novo acesso', sub: 'Indicadores de RH · Diretoria', valor: 1 },
+        { ic: 'ti-lock-open', cor: 'ambar', tit: 'Acesso liberado', sub: 'Painel de Metas · grupo Gerência' },
+        { ic: 'ti-speakerphone', cor: 'azul', tit: 'Comunicado publicado', sub: 'Painel de Estoque disponível' }
+    ]
+};
+const _vitrine = { timer: 0, espera: 0, contas: {}, acessos: 0, i: 0, rodando: false };
+const _fmtInt = v => Math.round(v).toLocaleString('pt-BR');
+const _fmtPct = v => v.toFixed(1).replace('.', ',') + '%';
+const _fmtPctInt = v => Math.round(v) + '%';
+
+function _vitrineEl() {
+    const t = document.getElementById('loginScreen');
+    const v = t && t.querySelector('.vitrine');
+    return v ? { t, v, acessos: v.querySelector('#vtAcessos'), variacao: v.querySelector('#vtVariacao'), meta: v.querySelector('#vtMeta'),
+                 aviso: v.querySelector('#vtAviso'), ic: v.querySelector('#vtAvisoIc'), tit: v.querySelector('#vtAvisoTit'), sub: v.querySelector('#vtAvisoSub') } : null;
+}
+const _vitrineNaTela = e => !!(e && e.t.style.display !== 'none' && e.v.offsetParent);
+
+// Anima um número de 'de' até 'ate' (o texto vai por textContent)
+function _vitrineContar(chave, el, de, ate, ms, formato, atraso = 0) {
+    cancelAnimationFrame(_vitrine.contas[chave]);
+    if (!el) return;
+    const comeco = performance.now() + atraso;
+    const passo = agora => {
+        const f = Math.max(0, Math.min(1, (agora - comeco) / ms));
+        const suave = 1 - Math.pow(1 - f, 3);
+        el.textContent = formato(de + (ate - de) * suave);
+        if (f < 1) _vitrine.contas[chave] = requestAnimationFrame(passo);
+    };
+    el.textContent = formato(de);
+    _vitrine.contas[chave] = requestAnimationFrame(passo);
+}
+
+function _vitrineAviso(e, a, animar) {
+    if (!e.aviso) return;
+    e.ic.className = 'vt-ic ' + a.cor;
+    e.ic.firstElementChild.className = 'ti ' + a.ic;
+    e.tit.textContent = a.tit;
+    e.sub.textContent = a.sub;
+    e.aviso.classList.remove('troca');
+    if (animar) { void e.aviso.offsetWidth; e.aviso.classList.add('troca'); }
+}
+
+function pararVitrine() {
+    clearInterval(_vitrine.timer); clearTimeout(_vitrine.espera);
+    Object.keys(_vitrine.contas).forEach(k => cancelAnimationFrame(_vitrine.contas[k]));
+    _vitrine.timer = 0; _vitrine.rodando = false;
+}
+
+function iniciarVitrine() {
+    const e = _vitrineEl();
+    if (!e) return;
+    pararVitrine();
+    const V = VITRINE_LOGIN;
+    _vitrine.acessos = V.acessos; _vitrine.i = 0;
+    e.aviso.style.setProperty('--vt-troca', V.troca + 'ms');
+    // Celular (painel escondido) e "reduzir movimento": tudo pronto e parado
+    if (_reduzirMovimento() || !_vitrineNaTela(e)) {
+        e.v.classList.remove('vt-anima');
+        e.acessos.textContent = _fmtInt(V.acessos); e.variacao.textContent = _fmtPctInt(V.variacao); e.meta.textContent = _fmtPct(V.meta);
+        _vitrineAviso(e, V.avisos[0], false);
+        return;
+    }
+    _vitrine.rodando = true;
+    e.v.classList.remove('vt-anima'); void e.v.offsetWidth; e.v.classList.add('vt-anima');
+    _vitrineContar('acessos', e.acessos, 0, V.acessos, 1500, _fmtInt, 700);
+    _vitrineContar('variacao', e.variacao, 0, V.variacao, 1500, _fmtPctInt, 700);
+    _vitrineContar('meta', e.meta, 0, V.meta, 1400, _fmtPct, 950);
+    _vitrineAviso(e, V.avisos[0], false);
+    _vitrine.espera = setTimeout(() => {
+        if (!_vitrineNaTela(e)) { pararVitrine(); return; }
+        _vitrineAviso(e, V.avisos[0], true);
+        _vitrine.timer = setInterval(() => {
+            if (!_vitrineNaTela(e)) { pararVitrine(); return; }   // saiu da tela de login: para tudo
+            _vitrine.i = (_vitrine.i + 1) % V.avisos.length;
+            const a = V.avisos[_vitrine.i];
+            _vitrineAviso(e, a, true);
+            if (a.valor) { // novo acesso: o contador do mês sobe junto
+                const a0 = _vitrine.acessos;
+                _vitrine.acessos += a.valor;
+                _vitrineContar('acessos', e.acessos, a0, _vitrine.acessos, 700, _fmtInt, 250);
+                e.acessos.classList.add('sobe');
+                setTimeout(() => e.acessos.classList.remove('sobe'), 1300);
+            }
+        }, V.troca);
+    }, 1100);
+}
+
+// ══ TELA DE LOGIN: horizonte de colunas de gráfico ao fundo ══
+// Colunas em duas camadas, uma linha de tendência que se traça ao abrir a tela e
+// pontos que acendem e apagam aos poucos. Só decoração: o desenho é gerado aqui com
+// números (sem nenhum dado), fica fora dos leitores de tela e para quando o login
+// sai da tela. Com "reduzir movimento", fica parado.
+const _horizonte = { timer: 0, luzes: null };
+
+function montarHorizonte() {
+    const h = document.querySelector('#loginScreen .horizonte');
+    if (!h) return null;
+    if (_horizonte.luzes) return h;
+    let s = 20261104; // sorteio fixo: o desenho é sempre o mesmo
+    const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    const n = v => Math.round(v * 10) / 10;
+    const L = 1600, A = 240;
+    let grade = '', fundo = '', frente = '', segs = '', topos = '', pontos = '';
+    [70, 120, 170].forEach(y => { grade += `M0 ${y}H${L}`; });
+    // camada de trás: colunas mais claras; a linha de tendência passa acima delas
+    const pts = [];
+    for (let x = -10, k = 0; x < L + 40; x += 34, k++) {
+        const w = 26;
+        const alt = Math.max(72, Math.min(222, 122 + 52 * Math.sin(x / 190) + 28 * Math.sin(x / 71 + 1.3) + (r() - .5) * 34));
+        fundo += `<rect x="${n(x)}" y="${n(A - alt)}" width="${w}" height="${n(alt + 2)}" rx="2"/>`;
+        const p = { x: n(x + w / 2), y: n(A - alt - 16) };
+        pts.push(p);
+        if (k % 2 === 0) pontos += `<circle cx="${p.x}" cy="${p.y}" r="2.6"${r() < .22 ? ' class="acesa"' : ''}/>`;
+    }
+    // camada da frente: colunas escuras "empilhadas", com o topo que acende
+    for (let x = -6; x < L + 6;) {
+        const w = 40, alt = Math.max(38, Math.min(158, 86 + 44 * Math.sin(x / 260 + 2) + (r() - .5) * 72)), y = A - alt;
+        frente += `<rect x="${n(x)}" y="${n(y)}" width="${w}" height="${n(alt + 2)}" rx="2"/>`;
+        for (let sy = y + alt * (.28 + r() * .14); sy < A - 14; sy += alt * (.26 + r() * .16)) {
+            segs += `<rect x="${n(x)}" y="${n(sy)}" width="${w}" height="1.5"/>`;
+        }
+        topos += `<rect x="${n(x)}" y="${n(y)}" width="${w}" height="2.4" rx="1"${r() < .3 ? ' class="acesa"' : ''}/>`;
+        x += w + 12;
+    }
+    h.innerHTML = `<svg viewBox="0 0 ${L} ${A}" preserveAspectRatio="xMidYMax slice" focusable="false">`
+        + `<path class="hz-grade" d="${grade}"/>`
+        + `<g class="hz-fundo">${fundo}</g>`
+        + `<path class="hz-linha" d="${_curvaSuave(pts)}" pathLength="1"/>`
+        + `<g class="hz-pontos">${pontos}</g>`
+        + `<g class="hz-frente">${frente}</g><g class="hz-seg" shape-rendering="crispEdges">${segs}</g>`
+        + `<g class="hz-topos">${topos}</g></svg>`;
+    _horizonte.luzes = h.querySelectorAll('.hz-pontos circle, .hz-topos rect');
+    return h;
+}
+
+function iniciarHorizonte() {
+    const h = montarHorizonte();
+    if (!h) return;
+    clearInterval(_horizonte.timer); _horizonte.timer = 0;
+    requestAnimationFrame(() => requestAnimationFrame(() => h.classList.add('pronto')));
+    const luzes = _horizonte.luzes;
+    if (_reduzirMovimento() || !luzes || !luzes.length) return;
+    _horizonte.timer = setInterval(() => {
+        if (!_loginNaTela()) { clearInterval(_horizonte.timer); _horizonte.timer = 0; return; } // saiu da tela de login: para
+        if (document.hidden) return;
+        // apaga as acesas e acende só 1 em cada 3 das apagadas: cerca de 1/4 fica acesa
+        for (let k = 0; k < 3; k++) {
+            const j = luzes[Math.floor(Math.random() * luzes.length)];
+            if (j.classList.contains('acesa')) j.classList.remove('acesa');
+            else if (Math.random() < .34) j.classList.add('acesa');
+        }
+    }, 650);
+}
+
+// ══ TELA DE LOGIN: saudação, "Lembrar meu e-mail" e "Esqueci minha senha" ══
+// Guarda SÓ o e-mail (nunca a senha), e só quando a pessoa marca a opção e entra
+// com sucesso. Desmarcar apaga na hora.
+const CHAVE_EMAIL_LEMBRADO = 'sistemapowerbi_email_lembrado';
+function _lerLocal(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function _gravarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* armazenamento bloqueado */ } }
+function _apagarLocal(k) { try { localStorage.removeItem(k); } catch (e) { /* armazenamento bloqueado */ } }
+
+function _emailLembrado() {
+    const v = (_lerLocal(CHAVE_EMAIL_LEMBRADO) || '').trim();
+    return v.length <= 254 && /^[^\s@<>"'`]+@[^\s@<>"'`]+\.[^\s@<>"'`]+$/.test(v) ? v : '';
+}
+
+function lembrarEmailAposEntrar(email) {
+    const cb = document.getElementById('loginLembrar');
+    if (cb && cb.checked && email) _gravarLocal(CHAVE_EMAIL_LEMBRADO, email);
+    else _apagarLocal(CHAVE_EMAIL_LEMBRADO);
+}
+
+function saudacaoLogin() {
+    const p = document.getElementById('loginSaudacao');
+    if (!p) return;
+    const h = new Date().getHours();
+    const oi = h >= 5 && h < 12 ? 'Bom dia!' : h >= 12 && h < 18 ? 'Boa tarde!' : 'Boa noite!';
+    const forte = document.createElement('strong');
+    forte.textContent = oi;
+    p.replaceChildren(forte, document.createTextNode(_emailLembrado() ? ' Que bom ter você de volta.' : ' Acesse seus painéis de BI.'));
+}
+
+function preencherEmailLembrado() {
+    const email = _emailLembrado();
+    const campo = document.getElementById('loginEmail');
+    const cb = document.getElementById('loginLembrar');
+    if (cb) cb.checked = !!email;
+    if (!email || !campo) return;
+    campo.value = email;
+    // no computador, o cursor já vai para a senha (no celular não abre o teclado sozinho)
+    try {
+        if (window.matchMedia('(pointer: fine)').matches) {
+            setTimeout(() => { const s = document.getElementById('loginPassword'); if (s && s.offsetParent && !s.value && _loginNaTela()) s.focus({ preventScroll: true }); }, 60);
+        }
+    } catch (e) { /* segue */ }
+}
+
+// Envia o e-mail de redefinição de senha do Firebase. A resposta é a mesma para
+// e-mail cadastrado ou não, para a tela não revelar quem tem conta.
+async function esqueciSenha() {
+    const campo = document.getElementById('loginEmail');
+    const email = (campo.value || '').trim();
+    if (!email) {
+        mostrarErro('loginAlert', 'Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".');
+        campo.focus();
+        return;
+    }
+    try {
+        auth.languageCode = 'pt';
+        await auth.sendPasswordResetEmail(email);
+    } catch (e) {
+        if (e.code === 'auth/invalid-email') { mostrarErro('loginAlert', 'E-mail inválido. Confira e tente de novo.'); return; }
+        if (e.code === 'auth/too-many-requests') { mostrarErro('loginAlert', 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'); return; }
+        if (e.code === 'auth/network-request-failed') { mostrarErro('loginAlert', 'Sem conexão. Verifique a internet e tente de novo.'); return; }
+        // auth/user-not-found e outros: mesma resposta de sucesso, sem revelar se a conta existe
+    }
+    document.getElementById('loginAlert').style.display = 'none';
+    mostrarSucesso('loginSuccess', 'Se este e-mail estiver cadastrado, você vai receber um link para criar uma nova senha. Confira também a caixa de spam.');
+}
+
+// Ao trocar de aba, some o aviso da outra aba (erro ou "link enviado")
+function limparAvisosLogin() {
+    ['loginAlert', 'loginSuccess'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+}
+
+// Chamada ao abrir a página e ao voltar para o login: entrada animada da tela e caneta
+function iniciarTelaLogin() {
+    const t = document.getElementById('loginScreen');
+    if (!t) return;
+    montarFraseLogin();
+    t.classList.remove('entrando'); void t.offsetWidth; t.classList.add('entrando');
+    clearTimeout(iniciarTelaLogin._t);
+    iniciarTelaLogin._t = setTimeout(() => t.classList.remove('entrando'), 1400);
+    if (!_escritaLogin.ativa) escreverFraseLogin();
+    if (!_vitrine.rodando) iniciarVitrine(); // a prévia só recomeça se tinha parado
+    try { if (!_horizonte.timer) iniciarHorizonte(); } catch (e) { console.warn('Horizonte do login:', e); }
+}
+
+// Deixa o login pronto para ser mostrado de novo (ex.: sessão encerrada por inatividade)
+function prepararTelaLogin() {
+    const btn = document.getElementById('btnLogin');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-login"></i> Entrar'; }
+    const senha = document.getElementById('loginPassword');
+    if (senha) senha.value = '';
+    try { switchLoginTab('entrar'); saudacaoLogin(); preencherEmailLembrado(); } catch (e) { console.warn('Saudação do login:', e); }
+    iniciarTelaLogin();
+}
+
+// Preparação ao abrir a página: monta a frase, liga o aviso de Caps Lock e começa as animações
+(function iniciarLoginAoAbrir() {
+    const t = document.getElementById('loginScreen');
+    if (!t) return;
+    try { montarFraseLogin(); } catch (e) { console.warn('Tela de login:', e); }
+    const capsLock = e => {
+        const aviso = e.target && e.target.id && document.getElementById('caps-' + e.target.id);
+        if (aviso && e.getModifierState) aviso.hidden = !e.getModifierState('CapsLock');
+    };
+    t.addEventListener('keydown', capsLock);
+    t.addEventListener('keyup', capsLock);
+    t.addEventListener('focusout', e => {
+        const aviso = e.target && e.target.id && document.getElementById('caps-' + e.target.id);
+        if (aviso) aviso.hidden = true;
+    });
+    // "Lembrar meu e-mail" desmarcado: esquece na hora
+    const lembrar = document.getElementById('loginLembrar');
+    if (lembrar) lembrar.addEventListener('change', () => {
+        if (!lembrar.checked) { _apagarLocal(CHAVE_EMAIL_LEMBRADO); saudacaoLogin(); }
+    });
+    // a saudação acompanha o horário quando a pessoa volta para a aba
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && _loginNaTela()) saudacaoLogin();
+    });
+    // mudou de tamanho (girou o tablet, abriu o painel): recomeça com o roteiro novo
+    let redim = 0;
+    window.addEventListener('resize', () => {
+        clearTimeout(redim);
+        redim = setTimeout(() => { if (_loginNaTela()) escreverFraseLogin(); }, 400);
+    });
+    try { saudacaoLogin(); preencherEmailLembrado(); } catch (e) { console.warn('Saudação do login:', e); }
+    try { iniciarTelaLogin(); } catch (e) { console.warn('Tela de login:', e); }
+})();
+window.esqueciSenha = esqueciSenha; window.limparAvisosLogin = limparAvisosLogin;
 </script>
 </body>
 </html>
