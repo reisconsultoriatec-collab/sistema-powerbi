@@ -27,7 +27,7 @@
         .login-footer{text-align:center;margin-top:24px;font-size:12px;color:#CBD5E1;}
         /* ===== TELA DE LOGIN (padrão CondoGest / OdontoWorld) ============================
            Visual escuro fixo. À esquerda, o painel do Sistema Power BI: a caneta escreve a
-           frase, sublinha "em um só lugar" e desenha os eixos de um gráfico no fim; as
+           frase, sublinha "decisão mais segura" e desenha os eixos de um gráfico no fim; as
            barras sobem, a linha de tendência é traçada e o último ponto pulsa. Abaixo, a
            prévia do portal (dados ilustrativos) e, ao fundo, um horizonte de colunas de
            gráfico. O painel some no celular. À direita, o cartão de acesso, com os mesmos
@@ -874,7 +874,7 @@
     <section class="auth-lado">
         <div class="auth-lado-marca"><span class="auth-marca"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="pbMarca1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#F59E0B"/></linearGradient></defs><rect x="5.5" y="19" width="5" height="8" rx="1.2" fill="url(#pbMarca1)" opacity=".72"/><rect x="13.5" y="13" width="5" height="14" rx="1.2" fill="url(#pbMarca1)" opacity=".88"/><rect x="21.5" y="16.5" width="5" height="10.5" rx="1.2" fill="url(#pbMarca1)" opacity=".72"/><path d="M5 14.5 13.5 9 19.5 11.5 26.5 5" fill="none" stroke="#FDE68A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26.5" cy="5" r="2.2" fill="#FDE68A"/><path d="M3.5 28h25" stroke="#FDE68A" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>Sistema Power BI</span></div>
         <div class="auth-lado-texto">
-            <h1 class="auth-titulo">Seus painéis Power BI em um só lugar e com acesso seguro</h1>
+            <h1 class="auth-titulo">Indicadores gerenciais para uma tomada de decisão mais segura!</h1>
             <div class="caneta" aria-hidden="true"><div class="caneta-mov"></div></div>
             <!-- Prévia do portal: só decoração, com valores fictícios fixos no código.
                  Não lê nada do banco de dados (nesta tela ninguém entrou ainda). -->
@@ -1950,15 +1950,15 @@ window.aprovarSolicAcesso=aprovarSolicAcesso;window.negarSolicAcesso=negarSolicA
 
 // ══ TELA DE LOGIN: frase escrita pela caneta ══
 // A caneta escreve a frase do painel (cada letra: contorno azul-céu que se preenche
-// de branco), sublinha "em um só lugar" e traça os eixos de um gráfico no fim da
+// de branco), sublinha "decisão mais segura" e traça os eixos de um gráfico no fim da
 // frase. Quando a caneta sai, as barras sobem uma a uma, a linha de tendência é
 // traçada, os pontos aparecem e o último pulsa em âmbar. A frase fica parada para
 // leitura, se apaga e o ciclo recomeça.
 // Só roda com o painel visível (computador); com a aba escondida o navegador pausa.
 // Celular (painel escondido) e "reduzir movimento": frase e gráfico aparecem prontos.
 // Leitores de tela leem a frase uma vez (so-leitor).
-const LOGIN_FRASE = 'Seus painéis Power BI em um só lugar e com acesso seguro'; // "Power BI", "em um só lugar" e "acesso seguro" sempre na mesma linha
-const LOGIN_DESTAQUE = 'em um só lugar'; // sublinhado pela caneta
+const LOGIN_FRASE = 'Indicadores gerenciais para uma tomada de decis\u00e3o\u00a0mais\u00a0segura!'; // "decisão mais segura!" sempre na mesma linha, junto do gráfico
+const LOGIN_DESTAQUE = 'decis\u00e3o\u00a0mais\u00a0segura'; // sublinhado pela caneta (pode vir seguido de pontuação, como o "!")
 const LOGIN_TEMPO = { inicio: 650, chega: 380, risca: 520, ida: 620, graf: 1200, sai: 480, parada: 8000, apaga: 450, onda: 7, respiro: 600 };
 
 // Gráfico (viewBox 84 x 72): a caneta traça o eixo vertical de cima para baixo e o horizontal
@@ -2037,12 +2037,14 @@ function montarFraseLogin() {
     if (!h1 || h1.getAttribute('data-montada')) return;
     const palavras = LOGIN_FRASE.split(' ');
     const html = palavras.map((p, k) => {
-        const letras = [...p].map(c => `<span class="esc-l">${escHtml(c)}</span>`).join('');
-        if (p === LOGIN_DESTAQUE) {
-            return `<span class="esc-p esc-destaque">${letras}`
-                + `<svg class="esc-risco" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 9C45 5 90 4 130 6S185 9 197 5" pathLength="1"/></svg></span>`;
+        const letras = t => [...t].map(c => `<span class="esc-l">${escHtml(c)}</span>`).join('');
+        let miolo = letras(p);
+        if (LOGIN_DESTAQUE && p.startsWith(LOGIN_DESTAQUE)) { // sublinha o destaque; a pontuação depois dele fica fora
+            miolo = `<span class="esc-destaque">${letras(LOGIN_DESTAQUE)}`
+                + `<svg class="esc-risco" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 9C45 5 90 4 130 6S185 9 197 5" pathLength="1"/></svg></span>`
+                + letras(p.slice(LOGIN_DESTAQUE.length));
         }
-        return `<span class="esc-p">${letras}${k === palavras.length - 1 ? grafLoginSvg() : ''}</span>`;
+        return `<span class="esc-p">${miolo}${k === palavras.length - 1 ? grafLoginSvg() : ''}</span>`;
     }).join(' ');
     h1.innerHTML = `<span class="so-leitor">${escHtml(LOGIN_FRASE)}</span><span class="esc" aria-hidden="true">${html}</span>`;
     h1.setAttribute('data-montada', '1');
@@ -2156,7 +2158,7 @@ function escreverFraseLogin() {
             por(entre(deOnde, noRisco(b, 0), suave(f)), 10 * Math.sin(f * Math.PI));
             if (f >= 1) { tempo -= T.chega; fase = 'risca'; risco.classList.add('riscando'); }
         }
-        if (fase === 'risca') { // sublinha "em um só lugar"
+        if (fase === 'risca') { // sublinha "decisão mais segura"
             f = Math.min(1, tempo / T.risca);
             traco.style.strokeDashoffset = String(1 - f);
             por(noRisco(b, f), 0, -1.5 * Math.sin(f * Math.PI));
